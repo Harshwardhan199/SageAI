@@ -1,0 +1,22 @@
+# Node.js dependencies
+**/node_modules/
+
+# Environment variables
+**/.env
+
+# Build outputs
+**/dist/
+**/build/
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Cache
+**/.cache/
+
+# OS-specific files
+.DS_Store
+Thumbs.db
