@@ -1,23 +1,23 @@
 const express = require("express");
 const cors = require("cors");
+const mongoose = require("mongoose");
+
+require("dotenv").config();
+
+const authRoutes = require("./routes/authRoutes");
 
 const app = express();
-const PORT = 5000;
 
-app.use(cors()); 
-app.use(express.json()); 
+app.use(cors());
+app.use(express.json());
 
-app.post("/api/auth/signup", (req, res) => {
-  const { username, email, password } = req.body;
+app.use("/api/auth", authRoutes);
 
-  console.log("Received signup data:", { username, email, password });
+mongoose.connect(process.env.MONGO_URI)
+  .then(() => console.log("MongoDB connected"))
+  .catch((err) => console.error("MongoDB connection error:", err));
 
-  res.json({
-    message: "Signup successful (dummy response)",
-    data: { username, email },
-  });
-});
-
+const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
 });
