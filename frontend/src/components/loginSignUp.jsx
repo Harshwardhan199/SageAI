@@ -1,8 +1,28 @@
 import { useState } from "react";
+import axios from "axios";
 
 export default function LoginSignup() {
 
   const [loginMode, setLoginMode] = useState(false);
+
+  const handleSignUp = async (e) => {
+    e.preventDefault();
+
+    console.log("SighUp Btn Clicked");
+
+    const formData = new FormData(e.target);
+    const data = Object.fromEntries(formData.entries());
+
+    try{
+      const res = await axios.post("http://localhost:5000/api/auth/signup", data);
+
+      console.log("Signup success:", res.data);
+    }
+    catch(error){
+      console.error("Error signing up:", error);
+    }
+
+  };
 
   return (
     <div className="flex items-center justify-center w-screen h-screen bg-[#141414]">
@@ -47,9 +67,7 @@ export default function LoginSignup() {
               </a>
             </div>
 
-            <button className="w-full h-12 bg-blue-500 rounded-lg shadow-md text-white font-semibold text-lg">
-              Sign In
-            </button>
+            <button className="w-full h-12 bg-blue-500 rounded-lg shadow-md text-white font-semibold text-lg">Sign In</button>
 
             <p className="text-[#bdc3c7] mt-4">or sign in with</p>
 
@@ -70,12 +88,13 @@ export default function LoginSignup() {
         {/* REGISTER FORM */}
         <div className={`absolute right-0 w-1/2 h-full bg-black flex items-center text-center p-10 z-[1] transition-all duration-600 ease-in-out ${loginMode ? "opacity-0 pointer-events-none" : "opacity-100 pointer-events-auto"}`}>
 
-          <form className="w-full">
+          <form className="w-full" onSubmit={handleSignUp}>
             <h1 className="text-4xl text-white font-bold -mt-2 mb-2">Sign Up</h1>
 
             <div className="relative my-7">
               <input
                 type="text"
+                name="username"
                 placeholder="Username"
                 required
                 className="w-full py-[13px] pr-[50px] pl-5 bg-[#3a3a3a] rounded-lg text-lg text-white placeholder-[#7f8c8d] outline-none"
@@ -86,6 +105,7 @@ export default function LoginSignup() {
             <div className="relative my-7">
               <input
                 type="email"
+                name="email"
                 placeholder="Email Address"
                 required
                 className="w-full py-[13px] pr-[50px] pl-5 bg-[#3a3a3a] rounded-lg text-lg text-white placeholder-[#7f8c8d] outline-none"
@@ -96,6 +116,7 @@ export default function LoginSignup() {
             <div className="relative my-7">
               <input
                 type="password"
+                name="password"
                 placeholder="Create Password"
                 required
                 className="w-full py-[13px] pr-[50px] pl-5 bg-[#3a3a3a] rounded-lg text-lg text-white placeholder-[#7f8c8d] outline-none"
@@ -103,9 +124,7 @@ export default function LoginSignup() {
               <i className="bx bxs-lock-alt absolute right-5 top-1/2 -translate-y-1/2 text-xl text-gray-500"></i>
             </div>
 
-            <button className="w-full h-12 bg-blue-500 rounded-lg shadow-md text-white font-semibold text-lg">
-              Sign Up
-            </button>
+            <button className="w-full h-12 bg-blue-500 rounded-lg shadow-md text-white font-semibold text-lg">Sign Up</button>
 
             <p className="text-[#bdc3c7] mt-4">or sign up with</p>
 
