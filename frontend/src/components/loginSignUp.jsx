@@ -1,25 +1,52 @@
 import { useState } from "react";
 import axios from "axios";
+import { useNavigate } from "react-router-dom";
+
+import { useAuth } from "../context/AuthContext";
 
 export default function LoginSignup() {
+  const navigate = useNavigate();
 
   const [loginMode, setLoginMode] = useState(false);
+
+  const { setAccessToken, setUser } = useAuth();
 
   const handleSignUp = async (e) => {
     e.preventDefault();
 
-    console.log("SighUp Btn Clicked");
+    const formData = new FormData(e.target);
+    const data = Object.fromEntries(formData.entries());
+
+    try {
+      const res = await axios.post("http://localhost:5000/api/auth/signup", data);
+
+      setAccessToken(res.data.accessToken);
+      setUser(res.data.user);
+
+      navigate("/");
+    }
+    catch (error) {
+      console.error("Error signing up:", error);
+    }
+
+  };
+
+  const handleLogin = async (e) => {
+    e.preventDefault();
 
     const formData = new FormData(e.target);
     const data = Object.fromEntries(formData.entries());
 
-    try{
-      const res = await axios.post("http://localhost:5000/api/auth/signup", data);
+    try {
+      const res = await axios.post("http://localhost:5000/api/auth/login", data, { withCredentials: true });
 
-      console.log("Signup success:", res.data);
+      setAccessToken(res.data.accessToken);
+      setUser(res.data.user);
+
+      navigate("/");
     }
-    catch(error){
-      console.error("Error signing up:", error);
+    catch (error) {
+      console.error("Error logging in:", error);
     }
 
   };
@@ -33,15 +60,16 @@ export default function LoginSignup() {
         {/* LOGIN FORM */}
         <div className={`absolute w-1/2 h-full bg-black flex items-center text-center p-10 z-[1] transition-all duration-600 ease-in-out ${loginMode ? "right-1/2 opacity-100 pointer-events-auto" : "right-0 opacity-0 pointer-events-none"}`}>
 
-          <form className="w-full">
+          <form className="w-full" onSubmit={handleLogin}>
             <h1 className="text-4xl text-white font-bold -mt-2 mb-2">Sign In</h1>
 
-            <input type="text" name="fakeuser" autoComplete="username" style={{ display: "none" }} />
-            <input type="password" name="fakepass" autoComplete="current-password" style={{ display: "none" }} />
+            {/* <input type="text" name="fakeuser1" autoComplete="username" style={{ display: "none" }} />
+            <input type="password" name="fakepass1" autoComplete="current-password" style={{ display: "none" }} /> */}
 
             <div className="relative my-7">
               <input
                 type="text"
+                name="email"
                 placeholder="Username or Email"
                 autoComplete="off"
                 className="w-full py-[13px] pr-[50px] pl-5 bg-[#3a3a3a] rounded-lg text-lg text-white font-medium placeholder-[#7f8c8d] outline-none"
@@ -54,6 +82,7 @@ export default function LoginSignup() {
             <div className="relative my-7">
               <input
                 type="password"
+                name="password"
                 placeholder="Password"
                 required
                 className="w-full py-[13px] pr-[50px] pl-5 bg-[#3a3a3a] rounded-lg text-lg text-white placeholder-[#7f8c8d] outline-none"
@@ -72,14 +101,15 @@ export default function LoginSignup() {
             <p className="text-[#bdc3c7] mt-4">or sign in with</p>
 
             <div className="flex justify-center mt-2 text-white">
-              {["google", "facebook", "github", "linkedin"].map((icon) => (
+              {/* {["google", "facebook", "github", "linkedin"].map((icon) => (
                 <a
                   key={icon}
                   className="inline-flex p-2 border-2 border-[#7f8c8d] rounded-lg text-2xl mx-2"
                 >
                   <i className={`bx bxl-${icon}`}></i>
                 </a>
-              ))}
+              ))} */}
+              <a className="inline-flex p-2 border-2 border-[#7f8c8d] rounded-lg text-2xl mx-2"><i className="bx bxl-google" onClick={handleGoogleLogin}></i></a>
             </div>
           </form>
 

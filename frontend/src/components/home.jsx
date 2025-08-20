@@ -1,8 +1,15 @@
-import { useRef, useState, useEffect } from "react";
+import { useRef, useState, useEffect, useContext } from "react";
 import { useNavigate } from "react-router-dom";
+import axios from "axios";
+
+import { useAuth } from "../context/AuthContext";
 
 const Home = () => {
     const navigate = useNavigate();
+
+    const { accessToken, setAccessToken, user, setUser } = useAuth();
+
+    const [username, setUsername] = useState("");
 
     const [toggleSidebar, setToggleSidebar] = useState(false);
     const [sidebarHover, setSidebarHover] = useState(false);
@@ -174,6 +181,86 @@ const Home = () => {
 
         refChatsExpandBtn.current.style.transform = showChats ? "rotate(-90deg)" : "rotate(0deg)";
     };
+
+    useEffect(() => {
+        const fetchData = async () => {
+            try {
+                const userStatus = await axios.post("http://localhost:5000/api/auth/currentUser", {}, { withCredentials: true });
+
+                if (userStatus.status == 200) {
+                    // No AccessToken - Get New
+                    if (!accessToken) {
+                        const res = await axios.post("http://localhost:5000/api/auth/refresh", {}, { withCredentials: true });
+                        const newAccessToken = res.data.accessToken;
+
+                        setAccessToken(newAccessToken);
+
+                        // After Getting New AccessToken - Get Data
+
+                        // const userRes = await axios.get("http://localhost:5000/api/user/me", {
+                        //     headers: { Authorization: `Bearer ${newAccessToken}` },
+                        //     withCredentials: true
+                        // });
+
+                        // setUsername(userRes.data.username);
+                    }
+                }
+                else {
+
+                }
+
+            } catch (error) {
+                console.error("Error occurred:", error.response?.data || error.message);
+            }
+        };
+
+        fetchData();
+    }, [accessToken]);
+
+    const handleLogOut = async () => {
+
+        await axios.post("http://localhost:5000/api/auth/logout", {}, {headers: { Authorization: `Bearer ${accessToken}` }, withCredentials: true });
+
+        setAccessToken(null);
+        setUser(null);
+
+        navigate("/loginSignUp");
+    };
+
+    const getName = async () => {
+        try {
+            const userStatus = await axios.post("http://localhost:5000/api/auth/currentUser", {}, { withCredentials: true });
+
+            if (userStatus.status == 200) {
+
+                // No AccessToken - Get New
+                if (!accessToken) {
+                    const res = await axios.post("http://localhost:5000/api/auth/refresh", {}, { withCredentials: true });
+                    const newAccessToken = res.data.accessToken;
+
+                    setAccessToken(newAccessToken);
+
+                    // After Getting New AccessToken - Get Data
+                    const userRes = await axios.get("http://localhost:5000/api/user/me", {
+                        headers: { Authorization: `Bearer ${newAccessToken}` },
+                        withCredentials: true
+                    });
+
+                    setUsername(userRes.data.username);
+                }
+                else {
+                    const userRes = await axios.get("http://localhost:5000/api/user/me", {
+                        headers: { Authorization: `Bearer ${accessToken}` },
+                        withCredentials: true
+                    });
+
+                    setUsername(userRes.data.username);
+                }
+            }
+        } catch (error) {
+            console.error("Error occurred:", error.response?.data || error.message);
+        }
+    }
 
     return (
         <>
@@ -374,14 +461,14 @@ const Home = () => {
 
                             <div className="h-1 w-full"></div>
 
-                            <div className={`absolute flex items-center left-[16px] bottom-5 h-14 rounded-b-lg border-t-1 border-[#0a0a0a] gap-2 transition-all duration-300 overflow-hidden whitespace-nowrap ${toggleSidebar ? "w-[268px]" : "w-[58px]"}`}>
+                            <div className={`absolute flex items-center left-[16px] bottom-5 h-14 rounded-b-lg border-t-1 border-[#2a2a2a] gap-2 bg-[#161616] transition-all duration-300 overflow-hidden whitespace-nowrap ${toggleSidebar ? "w-[268px]" : "w-[58px]"}`}>
 
-                                <div className="flex items-center justify-center h-[40px] w-[40px]  rounded-full m-2 bg-[#323232] flex-shrink-0" onClick={() => navigate("/loginSignUp")}>
+                                <div className="flex items-center justify-center h-[40px] w-[40px]  rounded-full m-2 bg-[#323232] flex-shrink-0" onClick={handleLogOut}>
                                     <img src="https://img.icons8.com/?size=100&id=98957&format=png&color=ffffff" alt="Profile" className="h-[30px] w-[30px]" />
                                 </div>
 
-                                <div className={`${toggleSidebar ? "opacity-100 w-auto" : "opacity-0 w-0"} overflow-hidden transition-all duration-300`}>
-                                    <div className="text-[14px]">Harshwardhan Saini</div>
+                                <div className={`${toggleSidebar ? "opacity-100 w-auto" : "opacity-0 w-0"} overflow-hidden transition-all duration-300`} onClick={getName}>
+                                    <div className="text-[14px]">{username || "Log In"}</div>
                                     <div className="text-[10px]">Free</div>
                                 </div>
 
