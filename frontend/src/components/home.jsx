@@ -2,6 +2,7 @@ import { useRef, useState, useEffect, useContext } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 
+import api from "../api/axios";
 import { useAuth } from "../context/AuthContext";
 
 const Home = () => {
@@ -138,20 +139,37 @@ const Home = () => {
         setFolderPopup(!folderPopup);
     };
 
+    // Calculate folder window Height
     useEffect(() => {
-        if (showFolders) {
-            const fullHeightFolders = `${refFoldersWindow.current.scrollHeight}px`;
-            setFoldersWindowHeight(fullHeightFolders);
 
-            // Remove the "auto" switch — let it stay at pixel value
-        } else {
-            // From current height → 0px
-            const fullHeightFolders = `${refFoldersWindow.current.scrollHeight}px`;
-            setFoldersWindowHeight(fullHeightFolders);
-            requestAnimationFrame(() => {
-                setFoldersWindowHeight("0px");
-            });
-        }
+        const fetchData = async () => {
+            // Get User Folders
+            try {
+                const res = await api.get("/user/folders");
+                
+                console.log("Folder Data: ", res.data);
+                
+            } catch (error) {
+                console.error("Error fetching info:", error.response?.data || error.message);
+                return null;
+            }
+
+            if (showFolders) {
+                const fullHeightFolders = `${refFoldersWindow.current.scrollHeight}px`;
+                setFoldersWindowHeight(fullHeightFolders);
+
+                // Remove the "auto" switch — let it stay at pixel value
+            } else {
+                // From current height → 0px
+                const fullHeightFolders = `${refFoldersWindow.current.scrollHeight}px`;
+                setFoldersWindowHeight(fullHeightFolders);
+                requestAnimationFrame(() => {
+                    setFoldersWindowHeight("0px");
+                });
+            }
+        };
+        fetchData();
+
     }, [showFolders]);
 
     const ExpandFolderList = () => {
@@ -160,6 +178,7 @@ const Home = () => {
         refFoldersExpandBtn.current.style.transform = showFolders ? "rotate(-90deg)" : "rotate(0deg)";
     };
 
+    // Calculate Chats window Height
     useEffect(() => {
         if (showChats) {
             const fullHeightChats = `${refChatsWindow.current.scrollHeight}px`;
@@ -182,8 +201,9 @@ const Home = () => {
         refChatsExpandBtn.current.style.transform = showChats ? "rotate(-90deg)" : "rotate(0deg)";
     };
 
+    // On Load
     useEffect(() => {
-        const fetchData = async () => {
+        const fetchInfo = async () => {
             try {
                 const userStatus = await axios.post("http://localhost:5000/api/auth/currentUser", {}, { withCredentials: true });
 
@@ -194,19 +214,16 @@ const Home = () => {
                         const newAccessToken = res.data.accessToken;
 
                         setAccessToken(newAccessToken);
-
-                        // After Getting New AccessToken - Get Data
-
-                        // const userRes = await axios.get("http://localhost:5000/api/user/me", {
-                        //     headers: { Authorization: `Bearer ${newAccessToken}` },
-                        //     withCredentials: true
-                        // });
-
-                        // setUsername(userRes.data.username);
                     }
-                }
-                else {
 
+                    // Get User Info
+                    try {
+                        const res = await api.get("/user/me");
+                        return setUsername(res.data.username);
+                    } catch (error) {
+                        console.error("Error fetching info:", error.response?.data || error.message);
+                        return null;
+                    }
                 }
 
             } catch (error) {
@@ -214,53 +231,19 @@ const Home = () => {
             }
         };
 
-        fetchData();
+        fetchInfo();
     }, [accessToken]);
 
+    // On Logout
     const handleLogOut = async () => {
 
-        await axios.post("http://localhost:5000/api/auth/logout", {}, {headers: { Authorization: `Bearer ${accessToken}` }, withCredentials: true });
+        await axios.post("http://localhost:5000/api/auth/logout", {}, { headers: { Authorization: `Bearer ${accessToken}` }, withCredentials: true });
 
         setAccessToken(null);
         setUser(null);
 
         navigate("/loginSignUp");
     };
-
-    const getName = async () => {
-        try {
-            const userStatus = await axios.post("http://localhost:5000/api/auth/currentUser", {}, { withCredentials: true });
-
-            if (userStatus.status == 200) {
-
-                // No AccessToken - Get New
-                if (!accessToken) {
-                    const res = await axios.post("http://localhost:5000/api/auth/refresh", {}, { withCredentials: true });
-                    const newAccessToken = res.data.accessToken;
-
-                    setAccessToken(newAccessToken);
-
-                    // After Getting New AccessToken - Get Data
-                    const userRes = await axios.get("http://localhost:5000/api/user/me", {
-                        headers: { Authorization: `Bearer ${newAccessToken}` },
-                        withCredentials: true
-                    });
-
-                    setUsername(userRes.data.username);
-                }
-                else {
-                    const userRes = await axios.get("http://localhost:5000/api/user/me", {
-                        headers: { Authorization: `Bearer ${accessToken}` },
-                        withCredentials: true
-                    });
-
-                    setUsername(userRes.data.username);
-                }
-            }
-        } catch (error) {
-            console.error("Error occurred:", error.response?.data || error.message);
-        }
-    }
 
     return (
         <>
@@ -276,6 +259,7 @@ const Home = () => {
 
                         <div className="flex flex-col item-center h-full w-full rounded-xl bg-[#161616] p-2 gap-1">
 
+                            {/* LOGO - Sidebar Toggle Btn */}
                             <div className="flex items-center justify-between h-[55px] w-full rounded-xl bg-[#161616] pb-4 gap-2 overflow-hidden">
 
                                 <div className="flex flex-shrink-0 justify-center w-[40px] relative">
@@ -297,6 +281,7 @@ const Home = () => {
                                 }
                             </div>
 
+                            {/* New Chat Btn */}
                             <div className="flex w-full mb-1">
                                 <div className="flex item-center gap-2 h-[40px] w-full rounded-lg bg-[#155dfc] p-2 text-white overflow-hidden whitespace-nowrap">
                                     <div className="flex items-center flex-shrink-0">
@@ -306,11 +291,15 @@ const Home = () => {
                                 </div>
                             </div>
 
+                            {/* Sidebar Main Content (Search, Folder, Folders List, Chat) */}
                             <div className="opacity-0 transition-all duration-300 ease-in-out overflow-hidden whitespace-nowrap" ref={refFolderChat}>
+
+                                {/* Search Bar */}
                                 <div className="flex item-center w-full rounded-lg bg-[#2d2d2d] p-2">
                                     <input type="text" placeholder="Search" className="w-full outline-0" />
                                 </div>
 
+                                {/* Folder */}
                                 <div className="flex item-center justify-between w-full rounded-xl bg-[#161616] py-2 text-sm mt-[10px]">
                                     <div>Folders</div>
                                     <div className="flex item-center justify-center gap-1">
@@ -323,10 +312,8 @@ const Home = () => {
                                     </div>
                                 </div>
 
-                                <div
-                                    className={`flex flex-col gap-1 w-full rounded-lg  overflow-hidden transition-all duration-300 ease-in-out ${showFolders ? "opacity-100" : "opacity-20"}`}
-                                    ref={refFoldersWindow}
-                                    style={{ height: foldersWindowHeight }}>
+                                {/* Folders List*/}
+                                <div className={`flex flex-col gap-1 w-full rounded-lg  overflow-hidden transition-all duration-300 ease-in-out ${showFolders ? "opacity-100" : "opacity-20"}`} ref={refFoldersWindow} style={{ height: foldersWindowHeight }}>
 
                                     <div className="bg-blue-500 rounded-lg">
                                         <div className="flex item-center justify-between ml-[5px] rounded-r-lg bg-[#2d2d2d] p-2">
@@ -372,6 +359,7 @@ const Home = () => {
 
                                 </div>
 
+                                {/* Chats */}
                                 <div className={`flex item-center justify-between w-full rounded-xl bg-[#161616] py-2 text-sm ${showFolders ? "mt-[10px]" : "mt-[0px]"}`}>
                                     <div>Chats</div>
                                     <div className="flex item-center justify-center gap-1">
@@ -382,10 +370,8 @@ const Home = () => {
                                 </div>
                             </div>
 
-                            <div
-                                className={`overflow-hidden transition-all duration-300 ease-in-out ${showChats ? "opacity-100" : "opacity-20"}`}
-                                ref={refChatsWindow}
-                                style={{ height: chatsWindowHeight }}>
+                            {/* Chats List */}
+                            <div className={`overflow-hidden transition-all duration-300 ease-in-out ${showChats ? "opacity-100" : "opacity-20"}`} ref={refChatsWindow} style={{ height: chatsWindowHeight }}>
 
                                 <div className="opacity-0 transition-all duration-300 ease-in-out overflow-hidden whitespace-nowrap" ref={refChats}>
                                     <div className="flex flex-col gap-1 item-center w-full rounded-lg">
@@ -394,8 +380,8 @@ const Home = () => {
                                             <div className="flex justify-between gap-2">
                                                 <div className="flex gap-2">
                                                     {/* <div className="flex items-center">
-                            <img src="https://img.icons8.com/?size=100&id=87085&format=png&color=ffffff" alt="chat" className="w-[20px] h-auto" />
-                          </div> */}
+                                                        <img src="https://img.icons8.com/?size=100&id=87085&format=png&color=ffffff" alt="chat" className="w-[20px] h-auto" />
+                                                    </div> */}
                                                     <div>Trip plan</div>
                                                 </div>
 
@@ -410,8 +396,8 @@ const Home = () => {
                                             <div className="flex justify-between gap-2">
                                                 <div className="flex gap-2">
                                                     {/* <div className="flex items-center">
-                            <img src="https://img.icons8.com/?size=100&id=87085&format=png&color=ffffff" alt="chat" className="w-[20px] h-auto" />
-                          </div> */}
+                                                        <img src="https://img.icons8.com/?size=100&id=87085&format=png&color=ffffff" alt="chat" className="w-[20px] h-auto" />
+                                                    </div> */}
                                                     <div>Projects Ideas</div>
                                                 </div>
 
@@ -426,8 +412,8 @@ const Home = () => {
                                             <div className="flex justify-between gap-2">
                                                 <div className="flex gap-2">
                                                     {/* <div className="flex items-center">
-                            <img src="https://img.icons8.com/?size=100&id=87085&format=png&color=ffffff" alt="chat" className="w-[20px] h-auto" />
-                          </div> */}
+                                                        <img src="https://img.icons8.com/?size=100&id=87085&format=png&color=ffffff" alt="chat" className="w-[20px] h-auto" />
+                                                    </div> */}
                                                     <div>Learn python</div>
                                                 </div>
 
@@ -442,8 +428,8 @@ const Home = () => {
                                             <div className="flex justify-between gap-2">
                                                 <div className="flex gap-2">
                                                     {/* <div className="flex items-center">
-                            <img src="https://img.icons8.com/?size=100&id=87085&format=png&color=ffffff" alt="chat" className="w-[20px] h-auto" />
-                          </div> */}
+                                                        <img src="https://img.icons8.com/?size=100&id=87085&format=png&color=ffffff" alt="chat" className="w-[20px] h-auto" />
+                                                    </div> */}
                                                     <div>Learn Tailwind</div>
                                                 </div>
 
@@ -459,15 +445,18 @@ const Home = () => {
 
                             </div>
 
+                            {/* Chats Bottom Line */}
                             <div className="h-1 w-full"></div>
 
+                            {/* User Info Part */}
                             <div className={`absolute flex items-center left-[16px] bottom-5 h-14 rounded-b-lg border-t-1 border-[#2a2a2a] gap-2 bg-[#161616] transition-all duration-300 overflow-hidden whitespace-nowrap ${toggleSidebar ? "w-[268px]" : "w-[58px]"}`}>
 
                                 <div className="flex items-center justify-center h-[40px] w-[40px]  rounded-full m-2 bg-[#323232] flex-shrink-0" onClick={handleLogOut}>
                                     <img src="https://img.icons8.com/?size=100&id=98957&format=png&color=ffffff" alt="Profile" className="h-[30px] w-[30px]" />
                                 </div>
 
-                                <div className={`${toggleSidebar ? "opacity-100 w-auto" : "opacity-0 w-0"} overflow-hidden transition-all duration-300`} onClick={getName}>
+                                {/* onClick={getName} */}
+                                <div className={`${toggleSidebar ? "opacity-100 w-auto" : "opacity-0 w-0"} overflow-hidden transition-all duration-300`} >
                                     <div className="text-[14px]">{username || "Log In"}</div>
                                     <div className="text-[10px]">Free</div>
                                 </div>

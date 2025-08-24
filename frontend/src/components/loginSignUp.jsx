@@ -7,9 +7,9 @@ import { useAuth } from "../context/AuthContext";
 export default function LoginSignup() {
   const navigate = useNavigate();
 
-  const [loginMode, setLoginMode] = useState(false);
+  const { updateAccessToken, setUser } = useAuth();
 
-  const { setAccessToken, setUser } = useAuth();
+  const [loginMode, setLoginMode] = useState(false);
 
   const handleSignUp = async (e) => {
     e.preventDefault();
@@ -49,6 +49,38 @@ export default function LoginSignup() {
       console.error("Error logging in:", error);
     }
 
+  };
+
+  const handleGoogleLogin = async (e) => {
+    e.preventDefault();
+
+    if (!window.google) {
+      console.error("Google Identity Services SDK not loaded");
+      return;
+    }
+
+    const client = window.google.accounts.oauth2.initCodeClient({
+      client_id: import.meta.env.VITE_REACT_APP_GOOGLE_CLIENT_ID,
+      scope: "openid email profile",
+      ux_mode: "popup",
+      callback: async (response) => {
+        try {
+          const { code } = response;
+
+          const res = await axios.post("http://localhost:5000/api/auth/google", { code }, { withCredentials: true });
+
+          updateAccessToken(res.data.accessToken);
+          setUser(res.data.data);
+
+          navigate("/");
+
+        } catch (err) {
+          console.error("Google login error:", err);
+        }
+      },
+    });
+
+    client.requestCode();
   };
 
   return (
@@ -109,7 +141,10 @@ export default function LoginSignup() {
                   <i className={`bx bxl-${icon}`}></i>
                 </a>
               ))} */}
-              <a className="inline-flex p-2 border-2 border-[#7f8c8d] rounded-lg text-2xl mx-2"><i className="bx bxl-google" onClick={handleGoogleLogin}></i></a>
+              <div className="inline-flex items-center justify-center gap-2 w-full p-2 border-2 border-[#7f8c8d] rounded-lg text-2xl mx-2" onClick={handleGoogleLogin}>
+                <div className="bx bxl-google"></div>
+                <div className="text-xl overflow-hidden whitespace-nowrap">SignIn with Google</div>
+              </div>
             </div>
           </form>
 
@@ -159,14 +194,18 @@ export default function LoginSignup() {
             <p className="text-[#bdc3c7] mt-4">or sign up with</p>
 
             <div className="flex justify-center mt-2 text-white">
-              {["google", "facebook", "github", "linkedin-square"].map((icon) => (
+              {/* {["google", "facebook", "github", "linkedin"].map((icon) => (
                 <a
                   key={icon}
                   className="inline-flex p-2 border-2 border-[#7f8c8d] rounded-lg text-2xl mx-2"
                 >
                   <i className={`bx bxl-${icon}`}></i>
                 </a>
-              ))}
+              ))} */}
+              <div className="inline-flex items-center justify-center gap-2 w-full p-2 border-2 border-[#7f8c8d] rounded-lg text-2xl mx-2" onClick={handleGoogleLogin}>
+                <div className="bx bxl-google"></div>
+                <div className="text-xl overflow-hidden whitespace-nowrap">SignIn with Google</div>
+              </div>
             </div>
 
           </form>

@@ -9,23 +9,18 @@ module.exports = async function (req, res, next) {
 
   const token = authHeader.split(" ")[1];
 
-  console.log("Checking authenticity of user using accessToken");
-
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    req.user = decoded; 
+    req.user = decoded;
 
-    console.log("Decoded ->", JSON.stringify(decoded, null, 2));
-  
     const user = await User.findById(decoded.userId);
     if (!user) {
       return res.status(404).json({ error: "User not found" });
     }
 
-    if (user.invalidAccessTokens.includes(token)){
+    if (decoded.tokenVersion !== user.tokenVersion) {
       return res.status(403).json({ error: "Expired token" });
     }
-    console.log("Middleware passed");
 
     next();
   } catch (err) {
