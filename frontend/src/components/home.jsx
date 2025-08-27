@@ -23,6 +23,20 @@ const Home = () => {
     const [foldersWindowHeight, setFoldersWindowHeight] = useState("0px");
 
     const [folderPopup, setFolderPopup] = useState(false);
+    const [folderName, setFolderName] = useState("");
+    const [folderColor, setFolderColor] = useState("");
+
+    const [folders, setFolders] = useState([]);
+    const [foldersCount, setFoldersCount] = useState(0);
+
+    const [folderMenuId, setFolderMenuId] = useState(null);
+    const folderMenuRef = useRef(null);
+
+    const [chats, setChats] = useState([]);
+    const [chatsCount, setChatsCount] = useState(0);
+
+    const [chatMenuId, setChatMenuId] = useState(null);
+    const chatMenuRef = useRef(null);
 
     const refSidebar = useRef(null);
 
@@ -40,6 +54,8 @@ const Home = () => {
     const refChats = useRef(null);
 
     const refMainarea = useRef(null);
+
+    const [promptText, setPromptText] = useState("");
 
     const LeftSideToggle = () => {
         if (!leftSideToggleClicked) {
@@ -135,106 +151,240 @@ const Home = () => {
         setLeftSideToggleClicked(false);
     };
 
-    const CreateFolder = () => {
-        setFolderPopup(!folderPopup);
-    };
-
-    // Calculate folder window Height
+    // On Load
     useEffect(() => {
-
-        const fetchData = async () => {
-            // Get User Folders
+        const fetchInfo = async () => {
+            // Get User Info
             try {
-                const res = await api.get("/user/folders");
-                
-                console.log("Folder Data: ", res.data);
-                
+                const res = await api.get("/user/me");
+                return setUsername(res.data.username);
             } catch (error) {
                 console.error("Error fetching info:", error.response?.data || error.message);
                 return null;
             }
+        };
 
-            if (showFolders) {
-                const fullHeightFolders = `${refFoldersWindow.current.scrollHeight}px`;
-                setFoldersWindowHeight(fullHeightFolders);
+        fetchInfo();
+        LoadFolders();
+        LoadChats();
 
-                // Remove the "auto" switch — let it stay at pixel value
-            } else {
-                // From current height → 0px
-                const fullHeightFolders = `${refFoldersWindow.current.scrollHeight}px`;
-                setFoldersWindowHeight(fullHeightFolders);
-                requestAnimationFrame(() => {
-                    setFoldersWindowHeight("0px");
-                });
+    }, [accessToken]);
+
+    // Close menu on outside click
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (!event.target.closest(".menu-container") &&
+                !event.target.closest(".options-button")) {
+                setFolderMenuId(null);
+                setChatMenuId(null);
             }
         };
-        fetchData();
 
-    }, [showFolders]);
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => {
+            document.removeEventListener("mousedown", handleClickOutside);
+        };
+    }, []);
 
-    const ExpandFolderList = () => {
+    // Folder Creation Popup Toggle
+    const CreateFolderPopup = () => {
+        setFolderName("");
+        setFolderColor("");
+        setFolderPopup(!folderPopup);
+    };
+
+    // Folder Creation
+    const handleFolderCreate = async () => {
+
+        const folderData = {
+            name: folderName.charAt(0).toUpperCase() + folderName.slice(1).toLowerCase(),
+            color: folderColor,
+            isPinned: false
+        };
+
+        console.log(folderData);
+
+        try {
+            const res = await api.post("/user/createFolder", folderData, { withCredentials: true });
+
+            console.log("Folder Data: ", res.data);
+
+        } catch (error) {
+            console.error("Error Creating Folder:", error.response?.data || error.message);
+            return null;
+        }
+
+        LoadFolders();
+        CreateFolderPopup();
+    };
+
+    // Toggle folder options menu
+    const toggleFolderMenu = (folderId) => {
+        setFolderMenuId((prev) => (prev === folderId ? null : folderId));
+        setChatMenuId(null);
+    };
+
+    // Folder Delete
+    const handleFolderDelete = async (folderId) => {
+        try {
+            await api.post("/user/deleteFolder", { folderId }, { withCredentials: true });
+
+        } catch (error) {
+            console.error("Error Deleting Folder:", error.response?.data || error.message);
+            return null;
+        }
+        LoadFolders();
+    };
+
+    // Loading Existing Folders
+    const LoadFolders = async () => {
+        // Get User Folders
+        let fCount;
+        try {
+            const res = await api.get("/user/folders");
+
+            setFolders(res.data.folderList);
+            console.log("Folders: ", res.data.folderList);
+
+            fCount = res.data.folderList.length;
+            setFoldersCount(res.data.folderList.length);
+        } catch (error) {
+            console.error("Error fetching folders:", error.response?.data || error.message);
+            return null;
+        }
+
+        // Show folders - make enough Space
+        if (showFolders) {
+            const fullHeightFolders = `${((fCount * 40) + ((fCount - 1) * 4))}px`;
+
+            setFoldersWindowHeight(fullHeightFolders);
+        }
+        return null;
+    };
+
+    // Toggling Folder list
+    const ToggleFolderList = async () => {
+        if (!showFolders) {
+            const fullHeightFolders = `${((foldersCount * 40) + ((foldersCount - 1) * 4))}px`;
+            setFoldersWindowHeight(fullHeightFolders);
+        } else {
+            const fullHeightFolders = `${0}px`;
+            setFoldersWindowHeight(fullHeightFolders);
+            requestAnimationFrame(() => {
+                setFoldersWindowHeight("0px");
+            });
+        }
+
         setShowFolders(!showFolders);
-
         refFoldersExpandBtn.current.style.transform = showFolders ? "rotate(-90deg)" : "rotate(0deg)";
     };
 
-    // Calculate Chats window Height
-    useEffect(() => {
-        if (showChats) {
-            const fullHeightChats = `${refChatsWindow.current.scrollHeight}px`;
-            setChatWindowHeight(fullHeightChats);
+    // Open Folder 
+    const OpenFolder = () => {
 
-            // Remove the "auto" switch — let it stay at pixel value
+    };
+
+
+    // New Chat
+    const handleNewChat = async () => {
+
+        let chatTitle = "How to"
+        const chatData = {
+            title: chatTitle.charAt(0).toUpperCase() + chatTitle.slice(1).toLowerCase(),
+            isPinned: false
+        };
+
+        try {
+            const res = await api.post("/user/newChat", chatData, { withCredentials: true });
+
+            console.log("Chat Data: ", res.data);
+
+        } catch (error) {
+            console.error("Error Creating Chat:", error.response?.data || error.message);
+            return null;
+        }
+
+        LoadChats();
+
+        //
+        
+    };
+
+    // Toggle chat options menu
+    const toggleChatMenu = (chatId) => {
+        setChatMenuId((prev) => (prev === chatId ? null : chatId));
+        setFolderMenuId(null);
+    };
+
+    // Delete Chat
+    const handleChatDelete = async (chatId) => {
+        try {
+            await api.post("/user/deleteChat", { chatId }, { withCredentials: true });
+
+        } catch (error) {
+            console.error("Error Deleting Chat:", error.response?.data || error.message);
+            return null;
+        }
+        LoadChats();
+    };
+
+    // Loading Existing Chats
+    const LoadChats = async () => {
+        // Get User Chats
+        let cCount;
+        try {
+            const res = await api.get("/user/chats");
+
+            setChats(res.data.chatList);
+            console.log("Chats: ", res.data.chatList);
+
+            cCount = res.data.chatList.length;
+            setChatsCount(res.data.chatList.length);
+        } catch (error) {
+            console.error("Error fetching chats:", error.response?.data || error.message);
+            return null;
+        }
+
+        // Show chats - make enough Space
+        if (showChats) {
+            const fullHeightChats = `${((cCount * 40) + ((cCount - 1) * 4))}px`;
+
+            setChatWindowHeight(fullHeightChats);
+        }
+        return null;
+    };
+
+    // Toggling Chat list
+    const ToggleChatList = async () => {
+        if (!showChats) {
+            const fullHeightChats = `${((chatsCount * 40) + ((chatsCount - 1) * 4))}px`;
+            setChatWindowHeight(fullHeightChats);
         } else {
-            // From current height → 0px
-            const fullHeightChats = `${refChatsWindow.current.scrollHeight}px`;
+            const fullHeightChats = `${0}px`;
             setChatWindowHeight(fullHeightChats);
             requestAnimationFrame(() => {
                 setChatWindowHeight("0px");
             });
         }
-    }, [showChats]);
 
-    const ExpandChatList = () => {
         setShowChats(!showChats);
-
         refChatsExpandBtn.current.style.transform = showChats ? "rotate(-90deg)" : "rotate(0deg)";
     };
 
-    // On Load
-    useEffect(() => {
-        const fetchInfo = async () => {
-            try {
-                const userStatus = await axios.post("http://localhost:5000/api/auth/currentUser", {}, { withCredentials: true });
+    // Open Chat
+    const OpenChat = () => {
 
-                if (userStatus.status == 200) {
-                    // No AccessToken - Get New
-                    if (!accessToken) {
-                        const res = await axios.post("http://localhost:5000/api/auth/refresh", {}, { withCredentials: true });
-                        const newAccessToken = res.data.accessToken;
+    };
 
-                        setAccessToken(newAccessToken);
-                    }
 
-                    // Get User Info
-                    try {
-                        const res = await api.get("/user/me");
-                        return setUsername(res.data.username);
-                    } catch (error) {
-                        console.error("Error fetching info:", error.response?.data || error.message);
-                        return null;
-                    }
-                }
+    // Send prompt req
+    const handlePrompt = () => {
+        console.log("Prompt: ", promptText);
 
-            } catch (error) {
-                console.error("Error occurred:", error.response?.data || error.message);
-            }
-        };
+        //
+    };
 
-        fetchInfo();
-    }, [accessToken]);
-
-    // On Logout
+    // Logout
     const handleLogOut = async () => {
 
         await axios.post("http://localhost:5000/api/auth/logout", {}, { headers: { Authorization: `Bearer ${accessToken}` }, withCredentials: true });
@@ -251,13 +401,13 @@ const Home = () => {
 
                 {/* Sidebar */}
                 <div className="absolute top-0 left-0">
-                    <div className="flex flex-col h-screen w-[90px] items-center px-4 py-5 gap-3 bg-transparent text-white overflow-hidden whitespace-nowrap transition-[width] duration-300 ease-in-out"
+                    <div className="flex flex-col h-screen w-[90px] items-center px-4 py-5 gap-3 bg-transparent text-white overflow-visible whitespace-nowrap transition-[width] duration-300 ease-in-out"
                         ref={refSidebar}
                         onMouseEnter={handleMouseEnter}
                         onMouseLeave={handleMouseLeave}
                     >
 
-                        <div className="flex flex-col item-center h-full w-full rounded-xl bg-[#161616] p-2 gap-1">
+                        <div className="flex flex-col item-center h-full w-full rounded-xl bg-[#161616] p-2 gap-1 overflow-visible">
 
                             {/* LOGO - Sidebar Toggle Btn */}
                             <div className="flex items-center justify-between h-[55px] w-full rounded-xl bg-[#161616] pb-4 gap-2 overflow-hidden">
@@ -283,7 +433,7 @@ const Home = () => {
 
                             {/* New Chat Btn */}
                             <div className="flex w-full mb-1">
-                                <div className="flex item-center gap-2 h-[40px] w-full rounded-lg bg-[#155dfc] p-2 text-white overflow-hidden whitespace-nowrap">
+                                <div className="flex item-center gap-2 h-[40px] w-full rounded-lg bg-[#155dfc] p-2 text-white overflow-hidden whitespace-nowrap" onClick={handleNewChat}>
                                     <div className="flex items-center flex-shrink-0">
                                         <img src="https://img.icons8.com/?size=100&id=zqRKVWtC1VeY&format=png&color=ffffff" alt="Logo" className="rounded-full w-[24px] h-auto" />
                                     </div>
@@ -292,7 +442,7 @@ const Home = () => {
                             </div>
 
                             {/* Sidebar Main Content (Search, Folder, Folders List, Chat) */}
-                            <div className="opacity-0 transition-all duration-300 ease-in-out overflow-hidden whitespace-nowrap" ref={refFolderChat}>
+                            <div className="opacity-0 transition-all duration-300 ease-in-out overflow-visible whitespace-nowrap" ref={refFolderChat}>
 
                                 {/* Search Bar */}
                                 <div className="flex item-center w-full rounded-lg bg-[#2d2d2d] p-2">
@@ -303,67 +453,49 @@ const Home = () => {
                                 <div className="flex item-center justify-between w-full rounded-xl bg-[#161616] py-2 text-sm mt-[10px]">
                                     <div>Folders</div>
                                     <div className="flex item-center justify-center gap-1">
-                                        <button className="h-[20px] rounded-md bg-[#2d2d2d] px-1 flex-shrink-0" onClick={CreateFolder}>
+                                        <button className="h-[20px] rounded-md bg-[#2d2d2d] px-1 flex-shrink-0" onClick={CreateFolderPopup}>
                                             <img src="https://img.icons8.com/?size=100&id=37784&format=png&color=000000" alt="expand-folders" className="invert w-[10px] h-auto" />
                                         </button>
-                                        <button className="h-[20px] rounded-md bg-[#2d2d2d] px-1" onClick={ExpandFolderList}>
+                                        <button className="h-[20px] rounded-md bg-[#2d2d2d] px-1" onClick={ToggleFolderList}>
                                             <img src="https://img.icons8.com/?size=100&id=R52ioYgkCvz6&format=png&color=1A1A1A" alt="expand-folders" className="invert w-[10px] h-auto transition-all duration-300" ref={refFoldersExpandBtn} />
                                         </button>
                                     </div>
                                 </div>
 
                                 {/* Folders List*/}
-                                <div className={`flex flex-col gap-1 w-full rounded-lg  overflow-hidden transition-all duration-300 ease-in-out ${showFolders ? "opacity-100" : "opacity-20"}`} ref={refFoldersWindow} style={{ height: foldersWindowHeight }}>
+                                <div className={`flex flex-col gap-1 w-full rounded-lg  overflow-visible transition-all duration-300 ease-in-out ${showFolders ? "opacity-100" : "opacity-0"}`} ref={refFoldersWindow} style={{ height: foldersWindowHeight }}>
 
-                                    <div className="bg-blue-500 rounded-lg">
-                                        <div className="flex item-center justify-between ml-[5px] rounded-r-lg bg-[#2d2d2d] p-2">
-                                            <div className="flex gap-2">
-                                                <div className="flex items-center">
-                                                    <img src="https://img.icons8.com/?size=100&id=82790&format=png&color=ffffff" alt="Folder" className="w-[20px] h-auto flex-shrink-0" />
+                                    {folders.map((folder) => (
+                                        <div key={folder._id} className={`${folder.color} rounded-lg overflow-visible`}>
+                                            <div className="flex item-center justify-between ml-[5px] rounded-r-lg bg-[#2d2d2d] p-2 overflow-visible">
+                                                <div className="flex gap-2">
+                                                    <div className="flex items-center">
+                                                        <img src="https://img.icons8.com/?size=100&id=82790&format=png&color=ffffff" alt="Folder" className="w-[20px] h-auto flex-shrink-0" />
+                                                    </div>
+                                                    <div>{folder.name}</div>
                                                 </div>
-                                                <div>Work chats</div>
+                                                <div className="relative flex items-center overflow-visible">
+                                                    <img src="https://img.icons8.com/?size=100&id=102729&format=png&color=dddddd" alt="options" className="options-button w-[14px] h-auto flex-shrink-0" onClick={() => toggleFolderMenu(folder._id)} />
+                                                    {folderMenuId === folder._id && (
+                                                        <div className="menu-container absolute -left-[15px] -bottom-[90px] flex flex-col gap-1 p-1 bg-[#2d2d2d] border-1 border-[#393939] drop-shadow rounded-lg z-1" ref={folderMenuRef}>
+                                                            <div className="px-3 py-1 rounded-lg hover:bg-[#323232]">Customize</div>
+                                                            <div className="h-[1px] w-full bg-[#393939]"></div>
+                                                            <div className="px-3 py-1 rounded-lg hover:bg-[#323232]" onClick={() => handleFolderDelete(folder._id)}>Delete</div>
+                                                        </div>
+                                                    )}
+                                                </div>
                                             </div>
-                                            <div className="flex items-center">
-                                                <img src="https://img.icons8.com/?size=100&id=102729&format=png&color=dddddd" alt="options" className="w-[14px] h-auto flex-shrink-0" />
-                                            </div>
-                                        </div>
-                                    </div>
 
-                                    <div className="bg-pink-500 rounded-lg ">
-                                        <div className="flex item-center justify-between ml-[5px] rounded-r-lg bg-[#2d2d2d] p-2">
-                                            <div className="flex gap-2">
-                                                <div className="flex items-center">
-                                                    <img src="https://img.icons8.com/?size=100&id=82790&format=png&color=ffffff" alt="Folder" className="w-[20px] h-auto flex-shrink-0" />
-                                                </div>
-                                                <div>Project chats</div>
-                                            </div>
-                                            <div className="flex items-center">
-                                                <img src="https://img.icons8.com/?size=100&id=102729&format=png&color=dddddd" alt="options" className="w-[14px] h-auto flex-shrink-0" />
-                                            </div>
                                         </div>
-                                    </div>
-
-                                    <div className="bg-green-500 rounded-lg ">
-                                        <div className="flex item-center justify-between ml-[5px] rounded-r-lg bg-[#2d2d2d] p-2">
-                                            <div className="flex gap-2">
-                                                <div className="flex items-center">
-                                                    <img src="https://img.icons8.com/?size=100&id=82790&format=png&color=ffffff" alt="Folder" className="w-[20px] h-auto flex-shrink-0" />
-                                                </div>
-                                                <div>Life chats</div>
-                                            </div>
-                                            <div className="flex items-center">
-                                                <img src="https://img.icons8.com/?size=100&id=102729&format=png&color=dddddd" alt="options" className="w-[14px] h-auto flex-shrink-0" />
-                                            </div>
-                                        </div>
-                                    </div>
+                                    ))}
 
                                 </div>
 
                                 {/* Chats */}
-                                <div className={`flex item-center justify-between w-full rounded-xl bg-[#161616] py-2 text-sm ${showFolders ? "mt-[10px]" : "mt-[0px]"}`}>
+                                <div className={`flex item-center justify-between w-full rounded-xl bg-[#161616] py-2 text-sm transition-all duration-100 ease-in-out ${showFolders ? "mt-[10px]" : "mt-[0px]"}`}>
                                     <div>Chats</div>
                                     <div className="flex item-center justify-center gap-1">
-                                        <button className="h-[20px] rounded-md bg-[#2d2d2d] px-1" onClick={ExpandChatList}>
+                                        <button className="h-[20px] rounded-md bg-[#2d2d2d] px-1" onClick={ToggleChatList}>
                                             <img src="https://img.icons8.com/?size=100&id=R52ioYgkCvz6&format=png&color=1A1A1A" alt="expand-folders" className="invert w-[10px] h-auto transition-all duration-300" ref={refChatsExpandBtn} />
                                         </button>
                                     </div>
@@ -371,74 +503,35 @@ const Home = () => {
                             </div>
 
                             {/* Chats List */}
-                            <div className={`overflow-hidden transition-all duration-300 ease-in-out ${showChats ? "opacity-100" : "opacity-20"}`} ref={refChatsWindow} style={{ height: chatsWindowHeight }}>
+                            <div className={`overflow-visible transition-all duration-300 ease-in-out ${showChats ? "opacity-100" : "opacity-0"}`} ref={refChatsWindow} style={{ height: chatsWindowHeight }}>
 
-                                <div className="opacity-0 transition-all duration-300 ease-in-out overflow-hidden whitespace-nowrap" ref={refChats}>
-                                    <div className="flex flex-col gap-1 item-center w-full rounded-lg">
+                                <div className="opacity-0 transition-all duration-300 ease-in-out overflow-visible whitespace-nowrap" ref={refChats}>
+                                    <div className="flex flex-col gap-1 item-center w-full rounded-lg overflow-visible">
 
-                                        <div className="flex flex-col item-center justify-between w-full rounded-lg bg-[#2d2d2d] p-2 gap-1">
-                                            <div className="flex justify-between gap-2">
-                                                <div className="flex gap-2">
-                                                    {/* <div className="flex items-center">
-                                                        <img src="https://img.icons8.com/?size=100&id=87085&format=png&color=ffffff" alt="chat" className="w-[20px] h-auto" />
-                                                    </div> */}
-                                                    <div>Trip plan</div>
-                                                </div>
+                                        {chats.map((chat) => (
+                                            <div className="flex flex-col item-center justify-between w-full rounded-lg bg-[#2d2d2d] p-2 gap-1 overflow-visible" key={chat._id}>
+                                                <div className="flex justify-between gap-2 overflow-visible">
+                                                    <div className="flex items-center gap-2">
+                                                        {/* <div className="flex items-center">
+                                                            <img src="https://img.icons8.com/?size=100&id=87085&format=png&color=ffffff" alt="chat" className="w-[20px] h-auto" />
+                                                        </div> */}
+                                                        <div className="flex items-center">{chat.title}</div>
+                                                    </div>
 
-                                                <div className="flex items-center">
-                                                    <img src="https://img.icons8.com/?size=100&id=102729&format=png&color=dddddd" alt="options" className="w-[14px] h-auto" />
-                                                </div>
-                                            </div>
-                                            <div className="text-[12px] truncate">A 3-day trip to see the northern lights in norway</div>
-                                        </div>
-
-                                        <div className="flex flex-col item-center justify-between w-full rounded-lg bg-[#2d2d2d] p-2 gap-1">
-                                            <div className="flex justify-between gap-2">
-                                                <div className="flex gap-2">
-                                                    {/* <div className="flex items-center">
-                                                        <img src="https://img.icons8.com/?size=100&id=87085&format=png&color=ffffff" alt="chat" className="w-[20px] h-auto" />
-                                                    </div> */}
-                                                    <div>Projects Ideas</div>
-                                                </div>
-
-                                                <div className="flex items-center">
-                                                    <img src="https://img.icons8.com/?size=100&id=102729&format=png&color=dddddd" alt="options" className="w-[14px] h-auto" />
+                                                    <div className="relative flex items-center overflow-visible">
+                                                        <img src="https://img.icons8.com/?size=100&id=102729&format=png&color=dddddd" alt="options" className="options-button w-[14px] h-auto" onClick={() => toggleChatMenu(chat._id)} />
+                                                        {chatMenuId === chat._id && (
+                                                            <div className="menu-container absolute -left-[15px] -bottom-[90px] flex flex-col gap-1 w-23 p-1 bg-[#2d2d2d] border-1 border-[#393939] drop-shadow rounded-lg z-1" ref={chatMenuRef}>
+                                                                <div className="px-3 py-1 rounded-lg hover:bg-[#323232]">Rename</div>
+                                                                <div className="h-[1px] w-full bg-[#393939]"></div>
+                                                                <div className="px-3 py-1 rounded-lg hover:bg-[#323232]" onClick={() => handleChatDelete(chat._id)}>Delete</div>
+                                                            </div>
+                                                        )}
+                                                    </div>
                                                 </div>
                                             </div>
-                                            <div className="text-[12px] truncate">A 3-day trip to see the northern lights in norway</div>
-                                        </div>
-
-                                        <div className="flex flex-col item-center justify-between w-full rounded-lg bg-[#2d2d2d] p-2 gap-1">
-                                            <div className="flex justify-between gap-2">
-                                                <div className="flex gap-2">
-                                                    {/* <div className="flex items-center">
-                                                        <img src="https://img.icons8.com/?size=100&id=87085&format=png&color=ffffff" alt="chat" className="w-[20px] h-auto" />
-                                                    </div> */}
-                                                    <div>Learn python</div>
-                                                </div>
-
-                                                <div className="flex items-center">
-                                                    <img src="https://img.icons8.com/?size=100&id=102729&format=png&color=dddddd" alt="options" className="w-[14px] h-auto" />
-                                                </div>
-                                            </div>
-                                            <div className="text-[12px] truncate">A 3-day trip to see the northern lights in norway</div>
-                                        </div>
-
-                                        <div className="flex flex-col item-center justify-between w-full rounded-lg bg-[#2d2d2d] p-2 gap-1">
-                                            <div className="flex justify-between gap-2">
-                                                <div className="flex gap-2">
-                                                    {/* <div className="flex items-center">
-                                                        <img src="https://img.icons8.com/?size=100&id=87085&format=png&color=ffffff" alt="chat" className="w-[20px] h-auto" />
-                                                    </div> */}
-                                                    <div>Learn Tailwind</div>
-                                                </div>
-
-                                                <div className="flex items-center">
-                                                    <img src="https://img.icons8.com/?size=100&id=102729&format=png&color=dddddd" alt="options" className="w-[14px] h-auto" />
-                                                </div>
-                                            </div>
-                                            <div className="text-[12px] truncate">A 3-day trip to see the northern lights in norway</div>
-                                        </div>
+                                        ))}
+                                        {/* <div className="text-[12px] truncate">A 3-day trip to see the northern lights in norway</div> */}
 
                                     </div>
                                 </div>
@@ -496,7 +589,7 @@ const Home = () => {
                     {/* Content */}
                     <div className="flex w-full h-full items-center justify-center pr-6">
 
-                        <div className="flex h-min-[500px] rounded-2xl bg-[#161616]">
+                        <div className="flex max-w-[670px] w-[55%] min-w-[600px] h-min-[500px] rounded-2xl bg-[#161616]">
 
                             <div className="flex flex-col items-center justify-center w-full p-4 gap-5">
 
@@ -556,14 +649,14 @@ const Home = () => {
                                             <img src="/logo-nobg.png" alt="Logo" className="rounded-full w-[28px] h-auto" />
                                         </div>
 
-                                        <input type="text" placeholder="Ask Anything" className="h-[40px] w-full indent-8 outline-0" />
+                                        <input type="text" placeholder="Ask Anything" className="h-[40px] w-full indent-8 outline-0" value={promptText} onChange={(e) => setFolderName(e.target.value)}/>
 
                                         <div className="absolute top-[10px] right-[40px]">
                                             <img src="https://img.icons8.com/?size=100&id=jkqQE2I90I8R&format=png&color=1A1A1A" alt="Logo" className="rounded-full w-[18px] h-auto" />
                                         </div>
 
                                         <div className="absolute top-[4px] right-[4px] bg-blue-600 p-1 rounded-lg">
-                                            <img src="https://img.icons8.com/?size=100&id=7789&format=png&color=1A1A1A" alt="Logo" className="invert rounded-full w-[24px] h-auto" />
+                                            <img src="https://img.icons8.com/?size=100&id=7789&format=png&color=1A1A1A" alt="Send prompt" className="invert rounded-full w-[24px] h-auto" onClick={handlePrompt}/>
                                         </div>
 
                                     </div>
@@ -596,93 +689,51 @@ const Home = () => {
                                 <div className="flex justify-center w-full text-[20px]">New Folder</div>
                                 <div className="flex gap-2">
                                     <label htmlFor="adad">Name -</label>
-                                    <input type="text" className="w-[250px] border-b-1 border-white outline-0 text-white indent-1" />
+                                    <input
+                                        type="text"
+                                        className="w-[250px] border-b-1 border-white outline-0 text-white indent-1"
+                                        value={folderName}
+                                        onChange={(e) => setFolderName(e.target.value)}
+                                    />
                                 </div>
                                 <div className="flex gap-3">
 
-                                    <label htmlFor="adad">Color -</label>
+                                    <label>Color -</label>
                                     <div className="flex items-center gap-2">
-                                        <label htmlFor="c-1" className="relative inline-flex items-center cursor-pointer">
-                                            <input type="radio" name="color" id="c-1" className="relative appearance-none w-4 h-4 bg-red-500 rounded-sm checked:bg-red-800 checked:border-transparent focus:outline-none peer" />
-                                            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 hidden peer-checked:block">
-                                                <img src="https://img.icons8.com/?size=100&id=e0QmzRlv9YWo&format=png&color=ffffff" alt="radio" className="h-auto w-[8px]" />
-                                            </div>
-                                        </label>
-
-                                        <label htmlFor="c-2" className="relative inline-flex items-center cursor-pointer">
-                                            <input type="radio" name="color" id="c-2" className="appearance-none w-4 h-4 bg-blue-500 rounded-sm checked:bg-blue-800 checked:border-transparent focus:outline-none peer" />
-                                            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 hidden peer-checked:block">
-                                                <img src="https://img.icons8.com/?size=100&id=e0QmzRlv9YWo&format=png&color=ffffff" alt="radio" className="h-auto w-[8px]" />
-                                            </div>
-                                        </label>
-
-                                        <label htmlFor="c-3" className="relative inline-flex items-center cursor-pointer">
-                                            <input type="radio" name="color" id="c3-" className="appearance-none w-4 h-4 bg-green-500 rounded-sm checked:bg-green-800 checked:border-transparent focus:outline-none peer" />
-                                            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 hidden peer-checked:block">
-                                                <img src="https://img.icons8.com/?size=100&id=e0QmzRlv9YWo&format=png&color=ffffff" alt="radio" className="h-auto w-[8px]" />
-                                            </div>
-                                        </label>
-
-                                        <label htmlFor="c-4" className="relative inline-flex items-center cursor-pointer">
-                                            <input type="radio" name="color" id="c-4" className="appearance-none w-4 h-4 bg-yellow-500 rounded-sm checked:bg-yellow-800 checked:border-transparent focus:outline-none peer" />
-                                            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 hidden peer-checked:block">
-                                                <img src="https://img.icons8.com/?size=100&id=e0QmzRlv9YWo&format=png&color=ffffff" alt="radio" className="h-auto w-[8px]" />
-                                            </div>
-                                        </label>
-
-                                        <label htmlFor="c-5" className="relative inline-flex items-center cursor-pointer">
-                                            <input type="radio" name="color" id="c-5" className="appearance-none w-4 h-4 bg-orange-500 rounded-sm checked:bg-orange-800 checked:border-transparent focus:outline-none peer" />
-                                            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 hidden peer-checked:block">
-                                                <img src="https://img.icons8.com/?size=100&id=e0QmzRlv9YWo&format=png&color=ffffff" alt="radio" className="h-auto w-[8px]" />
-                                            </div>
-                                        </label>
-
-                                        <label htmlFor="c-6" className="relative inline-flex items-center cursor-pointer">
-                                            <input type="radio" name="color" id="c-6" className="appearance-none w-4 h-4 bg-pink-500 rounded-sm checked:bg-pink-800 checked:border-transparent focus:outline-none peer" />
-                                            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 hidden peer-checked:block">
-                                                <img src="https://img.icons8.com/?size=100&id=e0QmzRlv9YWo&format=png&color=ffffff" alt="radio" className="h-auto w-[8px]" />
-                                            </div>
-                                        </label>
-
-                                        <label htmlFor="c-7" className="relative inline-flex items-center cursor-pointer">
-                                            <input type="radio" name="color" id="c-7" className="appearance-none w-4 h-4 bg-purple-500 rounded-sm checked:bg-purple-800 checked:border-transparent focus:outline-none peer" />
-                                            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 hidden peer-checked:block">
-                                                <img src="https://img.icons8.com/?size=100&id=e0QmzRlv9YWo&format=png&color=ffffff" alt="radio" className="h-auto w-[8px]" />
-                                            </div>
-                                        </label>
-
-                                        <label htmlFor="c-8" className="relative inline-flex items-center cursor-pointer">
-                                            <input type="radio" name="color" id="c8-" className="appearance-none w-4 h-4 bg-gray-200 rounded-sm checked:bg-gray-500 checked:border-transparent focus:outline-none peer" />
-                                            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 hidden peer-checked:block">
-                                                <img src="https://img.icons8.com/?size=100&id=e0QmzRlv9YWo&format=png&color=ffffff" alt="radio" className="h-auto w-[8px]" />
-                                            </div>
-                                        </label>
-
-                                        <label htmlFor="c-9" className="relative inline-flex items-center cursor-pointer">
-                                            <input type="radio" name="color" id="c-9" className="appearance-none w-4 h-4 bg-gray-500 rounded-sm checked:bg-gray-700 checked:border-transparent focus:outline-none peer" />
-                                            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 hidden peer-checked:block">
-                                                <img src="https://img.icons8.com/?size=100&id=e0QmzRlv9YWo&format=png&color=ffffff" alt="radio" className="h-auto w-[8px]" />
-                                            </div>
-                                        </label>
-
-                                        <label htmlFor="c-10" className="relative inline-flex items-center cursor-pointer">
-                                            <input type="radio" name="color" id="c-10" className="appearance-none w-4 h-4 bg-violet-500 rounded-sm checked:bg-violet-800 checked:border-transparent focus:outline-none peer" />
-                                            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 hidden peer-checked:block">
-                                                <img src="https://img.icons8.com/?size=100&id=e0QmzRlv9YWo&format=png&color=ffffff" alt="radio" className="h-auto w-[8px]" />
-                                            </div>
-                                        </label>
-
-                                        <label htmlFor="c-11" className="relative inline-flex items-center cursor-pointer">
-                                            <input type="radio" name="color" id="c-11" className="appearance-none w-4 h-4 bg-cyan-500 rounded-sm checked:bg-cyan-800 checked:border-transparent focus:outline-none peer" />
-                                            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 hidden peer-checked:block">
-                                                <img src="https://img.icons8.com/?size=100&id=e0QmzRlv9YWo&format=png&color=ffffff" alt="radio" className="h-auto w-[8px]" />
-                                            </div>
-                                        </label>
+                                        {[
+                                            { id: "c-1", color: "bg-red-500", checkedColor: "bg-red-800" },
+                                            { id: "c-2", color: "bg-blue-500", checkedColor: "bg-blue-800" },
+                                            { id: "c-3", color: "bg-green-500", checkedColor: "bg-green-800" },
+                                            { id: "c-4", color: "bg-yellow-500", checkedColor: "bg-yellow-800" },
+                                            { id: "c-5", color: "bg-orange-500", checkedColor: "bg-orange-800" },
+                                            { id: "c-6", color: "bg-pink-500", checkedColor: "bg-pink-800" },
+                                            { id: "c-7", color: "bg-purple-500", checkedColor: "bg-purple-800" },
+                                            { id: "c-8", color: "bg-gray-200", checkedColor: "bg-gray-500" },
+                                            { id: "c-9", color: "bg-gray-500", checkedColor: "bg-gray-700" },
+                                            { id: "c-10", color: "bg-violet-500", checkedColor: "bg-violet-800" },
+                                            { id: "c-11", color: "bg-cyan-500", checkedColor: "bg-cyan-800" },
+                                        ].map(({ id, color, checkedColor }) => (
+                                            <label key={id} htmlFor={id} className="relative inline-flex items-center cursor-pointer">
+                                                <input
+                                                    type="radio"
+                                                    name="color"
+                                                    id={id}
+                                                    className={`relative appearance-none w-4 h-4 ${color} rounded-sm checked:${checkedColor} checked:border-transparent focus:outline-none peer`}
+                                                    onChange={() => setFolderColor(color)}
+                                                />
+                                                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 hidden peer-checked:block">
+                                                    <img
+                                                        src="https://img.icons8.com/?size=100&id=e0QmzRlv9YWo&format=png&color=ffffff"
+                                                        alt="radio"
+                                                        className="h-auto w-[8px]" />
+                                                </div>
+                                            </label>
+                                        ))}
 
                                     </div>
                                 </div>
                                 <div className="flex justify-center w-full ">
-                                    <button className="px-2 py-[1px] mt-[10px] rounded-lg bg-[#155dfc] text-[18px]">Create</button>
+                                    <button className="px-2 py-[1px] mt-[10px] rounded-lg bg-[#155dfc] text-[18px]" onClick={handleFolderCreate}>Create</button>
                                 </div>
                             </div>
                         </div>

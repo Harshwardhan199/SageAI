@@ -6,15 +6,9 @@ const chatSchema = new mongoose.Schema({
   folderId: { type: mongoose.Schema.Types.ObjectId, ref: "Folder", default: null },
   
   title: { type: String, required: true, trim: true },
-  
-  description: { type: String, default: "" }, 
-  
-  // botId: { type: mongoose.Schema.Types.ObjectId, ref: "Bot", default: null }, 
-  
+      
   isPinned: { type: Boolean, default: false },
-  
-  lastMessageText: { type: String, default: "" }, 
-  
+    
   lastMessageAt: { type: Date }
 }, { timestamps: true });
 

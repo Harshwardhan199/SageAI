@@ -19,12 +19,12 @@ module.exports = async function (req, res, next) {
     }
 
     if (decoded.tokenVersion !== user.tokenVersion) {
-      return res.status(403).json({ error: "Expired token" });
+      return res.status(401).json({ error: "Expired token" });
     }
 
     next();
   } catch (err) {
     console.error("Auth middleware error:", err.message);
-    return res.status(403).json({ error: "Invalid or expired token" });
+    return res.status(401).json({ error: "Invalid or expired token" });
   }
 };

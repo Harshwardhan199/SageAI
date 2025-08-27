@@ -6,30 +6,33 @@ const api = axios.create({
   withCredentials: true,
 });
 
+const getValidAccessToken = async () => {
+  let token = authStore.getAccessToken();
+  if (!token) {
+    // Token missing → call refresh
+    try {
+      const res = await axios.post(
+        "http://localhost:5000/api/auth/refresh",
+        {},
+        { withCredentials: true }
+      );
+      token = res.data.accessToken;
+      authStore.updateAccessToken(token);
+    } catch (err) {
+      console.error("Failed to refresh token before request", err);
+    }
+  }
+  return token;
+};
+
 // Request Interceptor → Attach Access Token
 api.interceptors.request.use(
   async (config) => {
-    let accessToken = authStore.getAccessToken();
+    const accessToken = await getValidAccessToken();
 
     if (accessToken) {
       config.headers.Authorization = `Bearer ${accessToken}`;
     }
-    else {      
-      try {
-        const res = await axios.post(
-          "http://localhost:5000/api/auth/refresh",
-          {},
-          { withCredentials: true }
-        );
-        accessToken = res.data.accessToken;
-        authStore.updateAccessToken(accessToken);
-
-        config.headers.Authorization = `Bearer ${accessToken}`;
-      } catch (err) {
-        console.log("Refresh failed in request interceptor", err);
-      }
-    }
-
     return config;
   },
   (error) => Promise.reject(error)
@@ -43,10 +46,10 @@ api.interceptors.response.use(
 
     // If token expired & we haven’t retried yet
     if (error.response?.status === 401 && !originalRequest._retry) {
+      originalRequest._retry = true;
 
       console.log("Retring for new access token /refresh");
 
-      originalRequest._retry = true;
       try {
         const res = await axios.post(
           "http://localhost:5000/api/auth/refresh",
@@ -57,11 +60,12 @@ api.interceptors.response.use(
         const newAccessToken = res.data.accessToken;
         authStore.updateAccessToken(newAccessToken);
 
-        // Retry failed request with new token
+        // Retry original request with new token
         originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
         return api(originalRequest);
       } catch (refreshError) {
         console.error("Token refresh failed:", refreshError);
+        authStore.clear();
         return Promise.reject(refreshError);
       }
     }
