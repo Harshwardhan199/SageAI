@@ -727,7 +727,7 @@ const Home = () => {
 
                         <div className={`flex max-w-[780px] w-full min-w-[600px] h-min-[500px] rounded-2xl flex-grow-0 overflow-hidden ${messages.length == 0 ? "bg-[#161616]" : "h-full bg-transparent"}`}>
 
-                            <div className={`flex flex-col w-full py-4 gap-5 flex-grow overflow-y-auto ${messages.length == 0 ? "items-center justify-start" : ""}`} ref={containerRef}>
+                            <div className={`flex flex-col w-full px-2 pt-4 pb-2 gap-5 flex-grow overflow-y-auto ${messages.length == 0 ? "items-center justify-start" : ""}`} ref={containerRef}>
 
                                 {(messages.length == 0) &&
                                     <div>
