@@ -70,6 +70,7 @@ export default function LoginSignup() {
           const res = await axios.post("http://localhost:5000/api/auth/google", { code }, { withCredentials: true });
 
           updateAccessToken(res.data.accessToken);
+          
           setUser(res.data.data);
 
           navigate("/");

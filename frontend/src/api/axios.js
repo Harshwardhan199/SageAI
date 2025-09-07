@@ -8,7 +8,10 @@ const api = axios.create({
 
 const getValidAccessToken = async () => {
   let token = authStore.getAccessToken();
+  //console.log("Token ->: ", token);
+  
   if (!token) {
+    //console.log("Token ->->: ", token);
     // Token missing → call refresh
     try {
       const res = await axios.post(
@@ -18,6 +21,7 @@ const getValidAccessToken = async () => {
       );
       token = res.data.accessToken;
       authStore.updateAccessToken(token);
+      authStore.setUser(res.data.user);
     } catch (err) {
       console.error("Failed to refresh token before request", err);
     }

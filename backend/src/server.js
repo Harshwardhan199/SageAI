@@ -8,7 +8,7 @@ require("dotenv").config();
 
 const authRoutes = require("./routes/authRoutes");
 const userRoutes = require("./routes/userRoutes");
-
+const tempRoutes = require("./routes/freeRoutes")
 const app = express();
 
 app.use(cors({
@@ -21,6 +21,7 @@ app.use(cookieParser());
 
 app.use("/api/auth", authRoutes);
 app.use("/api/user", userRoutes);
+app.use("/api/temp", tempRoutes);
 
 app.get("/",(req,res) => {
   res.send("backend is running");

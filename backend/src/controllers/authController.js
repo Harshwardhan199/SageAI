@@ -115,6 +115,8 @@ const googleSignIn = async (req, res) => {
                 { headers: { "Content-Type": "application/x-www-form-urlencoded" } }
             );
             data = response.data;
+
+
         } catch (err) {
             console.error("Google token exchange error:", err.response?.data || err.message);
         }
@@ -179,7 +181,7 @@ const currentUser = async (req, res) => {
 
 };
 
-const refresh = async (req, res) => {
+const refresh = async (req, res) => {    
     try {
         const refreshToken = req.cookies.refreshToken;
 
@@ -194,7 +196,7 @@ const refresh = async (req, res) => {
             userFromDB.tokenVersion += 1;
             await userFromDB.save();
 
-            const accessToken = jwt.sign({ userId: userFromDB._id, username: userFromDB.username, email: userFromDB.email, tokenVersion: userFromDB.tokenVersion }, process.env.JWT_SECRET, { expiresIn: "20s" });
+            const accessToken = jwt.sign({ userId: userFromDB._id, username: userFromDB.username, email: userFromDB.email, tokenVersion: userFromDB.tokenVersion }, process.env.JWT_SECRET, { expiresIn: process.env.JWT_EXPIRES_IN });
             const refreshToken = jwt.sign({ userId: userFromDB._id, tokenVersion: userFromDB.tokenVersion }, process.env.JWT_REFRESH_SECRET, { expiresIn: process.env.JWT_REFRESH_EXPIRES_IN });
 
             res.cookie("refreshToken", refreshToken, {
@@ -204,7 +206,13 @@ const refresh = async (req, res) => {
                 maxAge: 7 * 24 * 60 * 60 * 1000
             });
 
-            res.json({ accessToken });
+            //Swnd AccessToken with response
+            res.status(200).json({
+                message: "Refresh successful",
+                user: { username: userFromDB.username, email: userFromDB.email },
+                accessToken
+            });
+
         });
 
     } catch (err) {

@@ -1,9 +1,11 @@
-import { useRef, useState, useEffect, useContext } from "react";
+import { useLayoutEffect, useRef, useState, useEffect, useContext } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 
 import api from "../api/axios";
 import { useAuth } from "../context/AuthContext";
+
+import Message from "./message"
 
 const Home = () => {
     const navigate = useNavigate();
@@ -55,7 +57,20 @@ const Home = () => {
 
     const refMainarea = useRef(null);
 
+    const [currentChat, setCurrentChat] = useState("");
+    const [messages, setMessages] = useState([]);
+
+    const titleBarRef = useRef(null);
+    const searchBarRef = useRef(null);
+
+    const inputBarRef = useRef(null);
     const [promptText, setPromptText] = useState("");
+
+    const containerRef = useRef(null);
+    const latestUserRef = useRef(null);
+    const latestBotRef = useRef(null);
+
+    const [responseHeight, setResponseHeight] = useState(0);
 
     const LeftSideToggle = () => {
         if (!leftSideToggleClicked) {
@@ -65,7 +80,7 @@ const Home = () => {
             setToggleSidebar(!toggleSidebar);
 
             // Sidebar width change
-            refSidebar.current.style.width = "300px";
+            refSidebar.current.style.width = "301px";
 
             // OnClick change image to logo
             setSidebarHover(false);
@@ -90,7 +105,9 @@ const Home = () => {
             }
 
             // Mainarea width change
-            refMainarea.current.style.marginLeft = "300px";
+            refMainarea.current.style.marginLeft = "302px";
+
+            //refInputArea.currrent.style.marginLeft = "300px"
         }
 
     };
@@ -99,7 +116,7 @@ const Home = () => {
         setToggleSidebar(!toggleSidebar);
 
         // Sidebar width change
-        refSidebar.current.style.width = "90px";
+        refSidebar.current.style.width = "58px";
 
         // OnClick change image to logo
         refLogo.current.style.width = "40px";
@@ -126,7 +143,8 @@ const Home = () => {
         }
 
         // Mainarea width change
-        refMainarea.current.style.marginLeft = "90px";
+        refMainarea.current.style.marginLeft = "59px";
+        //refInputArea.current.style.marginLeft = "90px";
 
         setLeftSideToggleClicked(false);
 
@@ -141,7 +159,7 @@ const Home = () => {
     const handleMouseEnter = () => {
         const sidebarWidth = refSidebar.current.getBoundingClientRect().width;
 
-        if (sidebarWidth == 90 && leftSideToggleClicked == false) {
+        if (sidebarWidth == 58 && leftSideToggleClicked == false) {
             setSidebarHover(true);
         }
     };
@@ -153,6 +171,7 @@ const Home = () => {
 
     // On Load
     useEffect(() => {
+
         const fetchInfo = async () => {
             // Get User Info
             try {
@@ -165,10 +184,16 @@ const Home = () => {
         };
 
         fetchInfo();
-        LoadFolders();
-        LoadChats();
 
-    }, [accessToken]);
+        //console.log("banda to hai");
+
+        if (user) {
+
+            LoadFolders();
+            LoadChats();
+        }
+
+    }, [user]);
 
     // Close menu on outside click
     useEffect(() => {
@@ -202,12 +227,12 @@ const Home = () => {
             isPinned: false
         };
 
-        console.log(folderData);
+        //console.log(folderData);
 
         try {
             const res = await api.post("/user/createFolder", folderData, { withCredentials: true });
 
-            console.log("Folder Data: ", res.data);
+            //console.log("Folder Data: ", res.data);
 
         } catch (error) {
             console.error("Error Creating Folder:", error.response?.data || error.message);
@@ -241,10 +266,14 @@ const Home = () => {
         // Get User Folders
         let fCount;
         try {
+            //console.log("trying to get folders");
+
             const res = await api.get("/user/folders");
 
+            //console.log("milgaye folders: ", res);
+
             setFolders(res.data.folderList);
-            console.log("Folders: ", res.data.folderList);
+            // console.log("Folders: ", res.data.folderList);
 
             fCount = res.data.folderList.length;
             setFoldersCount(res.data.folderList.length);
@@ -284,32 +313,6 @@ const Home = () => {
 
     };
 
-
-    // New Chat
-    const handleNewChat = async () => {
-
-        let chatTitle = "How to"
-        const chatData = {
-            title: chatTitle.charAt(0).toUpperCase() + chatTitle.slice(1).toLowerCase(),
-            isPinned: false
-        };
-
-        try {
-            const res = await api.post("/user/newChat", chatData, { withCredentials: true });
-
-            console.log("Chat Data: ", res.data);
-
-        } catch (error) {
-            console.error("Error Creating Chat:", error.response?.data || error.message);
-            return null;
-        }
-
-        LoadChats();
-
-        //
-        
-    };
-
     // Toggle chat options menu
     const toggleChatMenu = (chatId) => {
         setChatMenuId((prev) => (prev === chatId ? null : chatId));
@@ -325,6 +328,9 @@ const Home = () => {
             console.error("Error Deleting Chat:", error.response?.data || error.message);
             return null;
         }
+
+        setMessages([]);
+
         LoadChats();
     };
 
@@ -336,7 +342,7 @@ const Home = () => {
             const res = await api.get("/user/chats");
 
             setChats(res.data.chatList);
-            console.log("Chats: ", res.data.chatList);
+            //console.log("Chats: ", res.data.chatList);
 
             cCount = res.data.chatList.length;
             setChatsCount(res.data.chatList.length);
@@ -372,45 +378,175 @@ const Home = () => {
     };
 
     // Open Chat
-    const OpenChat = () => {
+    const OpenChat = async (chatId) => {
+        //console.log(chatId);
 
+        setCurrentChat(chatId);
+
+        try {
+            const pastMessages = await api.post("/user/getChat", { chatId }, { withCredentials: true });
+            setMessages(pastMessages.data.messages);
+
+            //console.log(pastMessages.data.messages);
+
+        } catch (error) {
+            console.error("Error getting Chat messages:", error.response?.data || error.message);
+        }
     };
 
+    // New Chat 
+    const handleNewChat = async () => {
+        navigate(0);
+    };
 
     // Send prompt req
-    const handlePrompt = () => {
-        console.log("Prompt: ", promptText);
+    const handlePrompt = async () => {
 
-        //
+        if (promptText == "") {
+            return null
+        }
+
+        let prompt = promptText;
+        setPromptText("");
+
+        if (user) {
+
+            const botId = Date.now();
+            setMessages((prev) => [...prev, { sender: "user", text: prompt }, { sender: "bot", text: "...", _id: botId },]);
+
+            inputBarRef.current.value = "";
+
+            // New chat prompt
+            if (!currentChat) {
+                try {
+                    const promptRes = await api.post("/user/chat", { prompt }, { withCredentials: true });
+                    const resData = promptRes.data.markdownResponse
+
+                    console.log(resData);
+                    
+                    //response
+                    setMessages((prev) => prev.map((msg) => msg._id === botId ? { ...msg, text: resData } : msg));
+
+                    setCurrentChat(promptRes.data.currentChat);
+
+                } catch (error) {
+                    console.error("Error Sending Prompt:", error.response?.data || error.message);
+                    return null;
+                }
+
+                LoadChats();
+                return null
+            }
+
+            // Prompt on continued chat
+            try {
+                const promptRes = await api.post("/user/chat", { prompt, currentChat }, { withCredentials: true });
+                const resData = promptRes.data.markdownResponse
+
+                console.log(resData);
+
+                //response
+                setMessages((prev) => prev.map((msg) => msg._id === botId ? { ...msg, text: resData } : msg));
+
+            } catch (error) {
+                console.error("Error Sending Prompt:", error.response?.data || error.message);
+                return null;
+            }
+        }
+        else {
+            const botId = Date.now();
+            setMessages((prev) => [...prev, { sender: "user", text: prompt }, { sender: "bot", text: "...", _id: botId },]);
+
+            // Temp chat prompt
+            try {
+                const promptRes = await axios.post("http://localhost:5000/api/temp/chat", { prompt });
+                const resData = promptRes.data.markdownResponse
+
+                console.log(resData);
+
+                //response
+                setMessages((prev) => prev.map((msg) => msg._id === botId ? { ...msg, text: resData } : msg));
+
+            } catch (error) {
+                console.error("Error Sending Prompt:", error.response?.data || error.message);
+                return null;
+            }
+
+        }
     };
+
+    // On Hit enter
+    const onHitEnter = (e) => {
+        if (e.key === "Enter") {
+            handlePrompt();
+        }
+    };
+
+    // Response Area height calculation
+    useLayoutEffect(() => {
+        if (latestBotRef.current && latestUserRef.current && containerRef.current) {
+            const rect = containerRef.current.getBoundingClientRect();
+            const viewportHeight = window.innerHeight || document.documentElement.clientHeight;
+
+            const titlebarHeight = titleBarRef.current?.getBoundingClientRect().height || 0;
+            const searchbarHeight = searchBarRef.current?.getBoundingClientRect().height || 0;
+
+            const usableTop = titlebarHeight;
+            const usableBottom = viewportHeight - searchbarHeight;
+
+            const visibleHeight = Math.min(rect.bottom, usableBottom) - Math.max(rect.top, usableTop);
+            const clampedVisibleHeight = visibleHeight > 0 ? visibleHeight : 0;
+
+            const latestUserHeight = latestUserRef.current.getBoundingClientRect().height;
+
+            const height = clampedVisibleHeight - latestUserHeight - 40;
+
+            setResponseHeight(height > 0 ? height : 0);
+        }
+
+    }, [messages]);
+
+    // Scroll to bottom after messages increase
+    useEffect(() => {
+        window.scrollTo({
+            top: document.body.scrollHeight,
+            behavior: "smooth",
+        });
+    }, [messages.length]);
 
     // Logout
     const handleLogOut = async () => {
 
-        await axios.post("http://localhost:5000/api/auth/logout", {}, { headers: { Authorization: `Bearer ${accessToken}` }, withCredentials: true });
+        if (user) {
+            await axios.post("http://localhost:5000/api/auth/logout", {}, { headers: { Authorization: `Bearer ${accessToken}` }, withCredentials: true });
 
-        setAccessToken(null);
-        setUser(null);
+            setAccessToken(null);
+            setUser(null);
+        }
 
         navigate("/loginSignUp");
     };
 
+    const lastUserIndex = messages.map(m => m.sender).lastIndexOf("user");
+    const lastBotIndex = messages.map(m => m.sender).lastIndexOf("bot");
+
     return (
         <>
-            <div className="flex h-screen w-screen bg-black bg-[radial-gradient(circle_400px_at_0%_100%,rgba(20,80,200,0.2)_0%,rgba(50,120,220,0.1)_60%,rgba(20,80,200,0)_100%),radial-gradient(circle_400px_at_100%_0%,rgba(20,80,200,0.2)_0%,rgba(50,120,220,0.1)_60%,rgba(20,80,200,0)_100%)]">
+            {/* bg-[radial-gradient(circle_400px_at_0%_100%,rgba(20,80,200,0.2)_0%,rgba(50,120,220,0.1)_60%,rgba(20,80,200,0)_100%),radial-gradient(circle_400px_at_100%_0%,rgba(20,80,200,0.2)_0%,rgba(50,120,220,0.1)_60%,rgba(20,80,200,0)_100%)] */}
+            <div className="flex min-h-screen bg-[#151515]">
 
                 {/* Sidebar */}
-                <div className="absolute top-0 left-0">
-                    <div className="flex flex-col h-screen w-[90px] items-center px-4 py-5 gap-3 bg-transparent text-white overflow-visible whitespace-nowrap transition-[width] duration-300 ease-in-out"
+                <div className="fixed flex top-0 left-0 border-r border-r-[#151515] overflow-visible z-1">
+                    <div className="flex flex-col h-screen w-[58px] items-center py-1 gap-3 bg-[#070707] text-white overflow-visible whitespace-nowrap transition-[width] duration-300 ease-in-out"
                         ref={refSidebar}
                         onMouseEnter={handleMouseEnter}
                         onMouseLeave={handleMouseLeave}
                     >
 
-                        <div className="flex flex-col item-center h-full w-full rounded-xl bg-[#161616] p-2 gap-1 overflow-visible">
+                        <div className="flex flex-col item-center h-full w-full rounded-xl bg-[#070707] p-2 gap-1 overflow-visible">
 
                             {/* LOGO - Sidebar Toggle Btn */}
-                            <div className="flex items-center justify-between h-[55px] w-full rounded-xl bg-[#161616] pb-4 gap-2 overflow-hidden">
+                            <div className="flex items-center justify-between h-[55px] w-full rounded-xl bg-[#070707] pb-4 gap-2 overflow-hidden">
 
                                 <div className="flex flex-shrink-0 justify-center w-[40px] relative">
                                     <img src="/logo-nobg.png"
@@ -425,7 +561,7 @@ const Home = () => {
                                 </div>
 
                                 {toggleSidebar &&
-                                    <div className="flex items-center rounded-xl p-1 hover:bg-[#0a0a0a]">
+                                    <div className="flex items-center rounded-xl p-1 hover:bg-[#1e1e1e]">
                                         <img src="https://img.icons8.com/?size=100&id=v3QqTdoWcQln&format=png&color=5A5A5A" alt="right sidebar" className="invert rounded-full w-[25px] h-[auto]" onClick={RightSideToggle} />
                                     </div>
                                 }
@@ -445,18 +581,18 @@ const Home = () => {
                             <div className="opacity-0 transition-all duration-300 ease-in-out overflow-visible whitespace-nowrap" ref={refFolderChat}>
 
                                 {/* Search Bar */}
-                                <div className="flex item-center w-full rounded-lg bg-[#2d2d2d] p-2">
+                                <div className="flex item-center w-full rounded-lg bg-[#272727] p-2">
                                     <input type="text" placeholder="Search" className="w-full outline-0" />
                                 </div>
 
                                 {/* Folder */}
-                                <div className="flex item-center justify-between w-full rounded-xl bg-[#161616] py-2 text-sm mt-[10px]">
+                                <div className="flex item-center justify-between w-full rounded-xl bg-[#070707] py-2 text-sm mt-[10px]">
                                     <div>Folders</div>
                                     <div className="flex item-center justify-center gap-1">
-                                        <button className="h-[20px] rounded-md bg-[#2d2d2d] px-1 flex-shrink-0" onClick={CreateFolderPopup}>
+                                        <button className="h-[20px] rounded-md bg-[#272727] px-1 flex-shrink-0" onClick={CreateFolderPopup}>
                                             <img src="https://img.icons8.com/?size=100&id=37784&format=png&color=000000" alt="expand-folders" className="invert w-[10px] h-auto" />
                                         </button>
-                                        <button className="h-[20px] rounded-md bg-[#2d2d2d] px-1" onClick={ToggleFolderList}>
+                                        <button className="h-[20px] rounded-md bg-[#272727] px-1" onClick={ToggleFolderList}>
                                             <img src="https://img.icons8.com/?size=100&id=R52ioYgkCvz6&format=png&color=1A1A1A" alt="expand-folders" className="invert w-[10px] h-auto transition-all duration-300" ref={refFoldersExpandBtn} />
                                         </button>
                                     </div>
@@ -467,7 +603,7 @@ const Home = () => {
 
                                     {folders.map((folder) => (
                                         <div key={folder._id} className={`${folder.color} rounded-lg overflow-visible`}>
-                                            <div className="flex item-center justify-between ml-[5px] rounded-r-lg bg-[#2d2d2d] p-2 overflow-visible">
+                                            <div className="flex item-center justify-between ml-[5px] rounded-r-lg bg-[#272727] p-2 overflow-visible">
                                                 <div className="flex gap-2">
                                                     <div className="flex items-center">
                                                         <img src="https://img.icons8.com/?size=100&id=82790&format=png&color=ffffff" alt="Folder" className="w-[20px] h-auto flex-shrink-0" />
@@ -477,7 +613,7 @@ const Home = () => {
                                                 <div className="relative flex items-center overflow-visible">
                                                     <img src="https://img.icons8.com/?size=100&id=102729&format=png&color=dddddd" alt="options" className="options-button w-[14px] h-auto flex-shrink-0" onClick={() => toggleFolderMenu(folder._id)} />
                                                     {folderMenuId === folder._id && (
-                                                        <div className="menu-container absolute -left-[15px] -bottom-[90px] flex flex-col gap-1 p-1 bg-[#2d2d2d] border-1 border-[#393939] drop-shadow rounded-lg z-1" ref={folderMenuRef}>
+                                                        <div className="menu-container absolute -left-[15px] -bottom-[90px] flex flex-col gap-1 p-1 bg-[#272727] border-1 border-[#393939] drop-shadow rounded-lg z-1" ref={folderMenuRef}>
                                                             <div className="px-3 py-1 rounded-lg hover:bg-[#323232]">Customize</div>
                                                             <div className="h-[1px] w-full bg-[#393939]"></div>
                                                             <div className="px-3 py-1 rounded-lg hover:bg-[#323232]" onClick={() => handleFolderDelete(folder._id)}>Delete</div>
@@ -492,10 +628,10 @@ const Home = () => {
                                 </div>
 
                                 {/* Chats */}
-                                <div className={`flex item-center justify-between w-full rounded-xl bg-[#161616] py-2 text-sm transition-all duration-100 ease-in-out ${showFolders ? "mt-[10px]" : "mt-[0px]"}`}>
+                                <div className={`flex item-center justify-between w-full rounded-xl bg-[#070707] py-2 text-sm transition-all duration-100 ease-in-out ${showFolders ? "mt-[10px]" : "mt-[0px]"}`}>
                                     <div>Chats</div>
                                     <div className="flex item-center justify-center gap-1">
-                                        <button className="h-[20px] rounded-md bg-[#2d2d2d] px-1" onClick={ToggleChatList}>
+                                        <button className="h-[20px] rounded-md bg-[#272727] px-1" onClick={ToggleChatList}>
                                             <img src="https://img.icons8.com/?size=100&id=R52ioYgkCvz6&format=png&color=1A1A1A" alt="expand-folders" className="invert w-[10px] h-auto transition-all duration-300" ref={refChatsExpandBtn} />
                                         </button>
                                     </div>
@@ -509,9 +645,9 @@ const Home = () => {
                                     <div className="flex flex-col gap-1 item-center w-full rounded-lg overflow-visible">
 
                                         {chats.map((chat) => (
-                                            <div className="flex flex-col item-center justify-between w-full rounded-lg bg-[#2d2d2d] p-2 gap-1 overflow-visible" key={chat._id}>
+                                            <div className="flex flex-col item-center justify-between w-full rounded-lg bg-[#272727] p-2 gap-1 overflow-visible" key={chat._id} onClick={() => OpenChat(chat._id)}>
                                                 <div className="flex justify-between gap-2 overflow-visible">
-                                                    <div className="flex items-center gap-2">
+                                                    <div className="flex flex-1 items-center gap-2 overflow-hidden">
                                                         {/* <div className="flex items-center">
                                                             <img src="https://img.icons8.com/?size=100&id=87085&format=png&color=ffffff" alt="chat" className="w-[20px] h-auto" />
                                                         </div> */}
@@ -521,7 +657,7 @@ const Home = () => {
                                                     <div className="relative flex items-center overflow-visible">
                                                         <img src="https://img.icons8.com/?size=100&id=102729&format=png&color=dddddd" alt="options" className="options-button w-[14px] h-auto" onClick={() => toggleChatMenu(chat._id)} />
                                                         {chatMenuId === chat._id && (
-                                                            <div className="menu-container absolute -left-[15px] -bottom-[90px] flex flex-col gap-1 w-23 p-1 bg-[#2d2d2d] border-1 border-[#393939] drop-shadow rounded-lg z-1" ref={chatMenuRef}>
+                                                            <div className="menu-container absolute -left-[15px] -bottom-[90px] flex flex-col gap-1 w-23 p-1 bg-[#272727] border-1 border-[#393939] drop-shadow rounded-lg z-1" ref={chatMenuRef}>
                                                                 <div className="px-3 py-1 rounded-lg hover:bg-[#323232]">Rename</div>
                                                                 <div className="h-[1px] w-full bg-[#393939]"></div>
                                                                 <div className="px-3 py-1 rounded-lg hover:bg-[#323232]" onClick={() => handleChatDelete(chat._id)}>Delete</div>
@@ -542,10 +678,10 @@ const Home = () => {
                             <div className="h-1 w-full"></div>
 
                             {/* User Info Part */}
-                            <div className={`absolute flex items-center left-[16px] bottom-5 h-14 rounded-b-lg border-t-1 border-[#2a2a2a] gap-2 bg-[#161616] transition-all duration-300 overflow-hidden whitespace-nowrap ${toggleSidebar ? "w-[268px]" : "w-[58px]"}`}>
+                            <div className={`absolute left-0 bottom-0 flex items-center w-full py-1 pl-[4px] border-t-1 border-[#272727] gap-2 bg-[#070707] transition-all duration-300 ease-in-out overflow-hidden whitespace-nowrap ${toggleSidebar ? "w-[268px]" : "w-[58px]"}`}>
 
-                                <div className="flex items-center justify-center h-[40px] w-[40px]  rounded-full m-2 bg-[#323232] flex-shrink-0" onClick={handleLogOut}>
-                                    <img src="https://img.icons8.com/?size=100&id=98957&format=png&color=ffffff" alt="Profile" className="h-[30px] w-[30px]" />
+                                <div className="flex items-center justify-center h-[35px] w-[35px]  rounded-full m-2 bg-[#323232] flex-shrink-0" onClick={handleLogOut}>
+                                    <img src="https://img.icons8.com/?size=100&id=98957&format=png&color=ffffff" alt="Profile" className="h-[25px] w-[25px]" />
                                 </div>
 
                                 {/* onClick={getName} */}
@@ -562,15 +698,15 @@ const Home = () => {
                 </div>
 
                 {/* Mainarea */}
-                <div className="flex flex-col items-center h-screen flex-1 ml-[90px] bg-transparent transition-[margin-left] duration-300 ease-in-out" ref={refMainarea}>
+                <div className="relative flex flex-col items-center justify-center min-h-screen flex-1 ml-[59px] bg-black transition-[margin-left] duration-300 ease-in-out" ref={refMainarea}>
 
-                    {/* TitleBar */}
-                    <div className="flex w-full justify-between text-white pt-8 pr-8">
+                    {/* TitleBar [#161616] */}
+                    <div className="sticky top-0 flex w-full justify-between text-white pt-4 pr-8 pb-4 bg-[#030303] border-b border-b-[#151515]" ref={titleBarRef}>
                         <div className="flex items-center gap-3">
                             <div className="flex items-center">
                                 {/* <button className="h-[20px]">
-                  <img src="https://img.icons8.com/?size=100&id=40217&format=png&color=1A1A1A" alt="expand-folders" className="invert w-[14px] h-auto" />
-                </button> */}
+                                        <img src="https://img.icons8.com/?size=100&id=40217&format=png&color=1A1A1A" alt="expand-folders" className="invert w-[14px] h-auto" />
+                                    </button> */}
                             </div>
                             <div className="text-[20px]">Sage</div>
                         </div>
@@ -587,61 +723,117 @@ const Home = () => {
                     </div>
 
                     {/* Content */}
-                    <div className="flex w-full h-full items-center justify-center pr-6">
+                    <div className="flex flex-col w-full flex-1 mt-[1px] items-center justify-center overflow-y-auto">
 
-                        <div className="flex max-w-[670px] w-[55%] min-w-[600px] h-min-[500px] rounded-2xl bg-[#161616]">
+                        <div className={`flex max-w-[780px] w-full min-w-[600px] h-min-[500px] rounded-2xl flex-grow-0 overflow-hidden ${messages.length == 0 ? "bg-[#161616]" : "h-full bg-transparent"}`}>
 
-                            <div className="flex flex-col items-center justify-center w-full p-4 gap-5">
+                            <div className={`flex flex-col w-full py-4 gap-5 flex-grow overflow-y-auto ${messages.length == 0 ? "items-center justify-start" : ""}`} ref={containerRef}>
 
-                                <div className="flex flex-col items-center gap-2 max-w-[351px] text-center mt-[10px]">
-
+                                {(messages.length == 0) &&
                                     <div>
-                                        <img src="/logo.png" alt="Logo" className="rounded-full w-[40px] h-auto" />
-                                    </div>
+                                        <div className="flex flex-col items-center justify-center w-full gap-2 p-8 text-center mt-[10px]" ref={searchBarRef}>
 
-                                    <div className="text-3xl text-white">How can i help you today?</div>
+                                            <div>
+                                                <img src="/logo.png" alt="Logo" className="rounded-full w-[40px] h-auto" />
+                                            </div>
 
-                                    <div className="text-[11.5px] text-[#969696]">This code will display a prompt asking the user for their name, and then it will display a greeting message with the name entered by the user.</div>
+                                            <div className="text-3xl text-white">How can i help you today?</div>
 
-                                </div>
+                                            <div className="text-[11.5px] text-[#969696]">This code will display a prompt asking the user for their name, and then it will display a greeting message with the name entered by the user.</div>
 
-                                <div className="flex items-center justify-center gap-2 text-center text-[10px] text-[#969696] mt-[10px]">
-
-                                    <div className="flex flex-col  h-[130px] w-[160px] p-3 rounded-xl bg-[#2d2d2d] gap-1">
-                                        <div className="flex items-center justify-center">
-                                            <img src="https://img.icons8.com/?size=100&id=bc20TOtEmtiP&format=png&color=155dfc" alt="Logo" className="w-[30px] h-auto" />
                                         </div>
-                                        <div className="text-center text-[16px] leading-5 text-white">Saved Prompt Templates</div>
-                                        <div>User saves and reuse prompt templates for faster responses.</div>
-                                    </div>
 
-                                    <div className="flex flex-col  h-[130px] w-[160px] p-3 rounded-xl bg-[#2d2d2d] gap-1">
-                                        <div className="flex items-center justify-center">
-                                            <img src="https://img.icons8.com/?size=100&id=54127&format=png&color=155dfc" alt="Logo" className="w-[30px] h-auto" />
+                                        <div className="flex items-center justify-center gap-2 text-center text-[10px] text-[#969696] mt-[10px]">
+
+                                            <div className="flex flex-col  h-[130px] w-[160px] p-3 rounded-xl bg-[#2d2d2d] gap-1">
+                                                <div className="flex items-center justify-center">
+                                                    <img src="https://img.icons8.com/?size=100&id=bc20TOtEmtiP&format=png&color=155dfc" alt="Logo" className="w-[30px] h-auto" />
+                                                </div>
+                                                <div className="text-center text-[16px] leading-5 text-white">Saved Prompt Templates</div>
+                                                <div>User saves and reuse prompt templates for faster responses.</div>
+                                            </div>
+
+                                            <div className="flex flex-col  h-[130px] w-[160px] p-3 rounded-xl bg-[#2d2d2d] gap-1">
+                                                <div className="flex items-center justify-center">
+                                                    <img src="https://img.icons8.com/?size=100&id=54127&format=png&color=155dfc" alt="Logo" className="w-[30px] h-auto" />
+                                                </div>
+                                                <div className="text-center text-[16px] leading-5 text-white">Media Type Selection</div>
+                                                <div>Users select media type for tailored interactions.</div>
+                                            </div>
+
+                                            <div className="flex flex-col  h-[130px] w-[160px] p-3 rounded-xl bg-[#2d2d2d] gap-1">
+                                                <div className="flex items-center justify-center">
+                                                    <img src="https://img.icons8.com/?size=100&id=78888&format=png&color=155dfc" alt="Logo" className="w-[30px] h-auto" />
+                                                </div>
+                                                <div className="text-center text-[16px] leading-5 text-white">Multilingual Support</div>
+                                                <div>Choose language for better interaction.</div>
+                                            </div>
                                         </div>
-                                        <div className="text-center text-[16px] leading-5 text-white">Media Type Selection</div>
-                                        <div>Users select media type for tailored interactions.</div>
-                                    </div>
 
-                                    <div className="flex flex-col  h-[130px] w-[160px] p-3 rounded-xl bg-[#2d2d2d] gap-1">
-                                        <div className="flex items-center justify-center">
-                                            <img src="https://img.icons8.com/?size=100&id=78888&format=png&color=155dfc" alt="Logo" className="w-[30px] h-auto" />
+                                        <div className="flex flex-col gap-2 w-full mt-12">
+
+                                            <div className="flex justify-center gap-6 text-sm text-[#969696]">
+                                                <div>All</div>
+                                                <div>Text</div>
+                                                <div>Image</div>
+                                                <div>Video</div>
+                                                <div>Music</div>
+                                                <div>Analytics</div>
+                                            </div>
+
+                                            <div className="relative w-full rounded-lg bg-white text-black">
+
+                                                <div className="absolute top-[6px] left-[2px]">
+                                                    <img src="/logo-nobg.png" alt="Logo" className="rounded-full w-[28px] h-auto" />
+                                                </div>
+
+                                                <input
+                                                    type="text"
+                                                    placeholder="Ask Anything"
+                                                    className="h-[40px] w-full indent-8 outline-0"
+                                                    value={promptText}
+                                                    onChange={(e) => setPromptText(e.target.value)}
+                                                    onKeyDown={onHitEnter}
+                                                    ref={inputBarRef}
+                                                />
+
+                                                <div className="absolute top-[10px] right-[40px]">
+                                                    <img src="https://img.icons8.com/?size=100&id=jkqQE2I90I8R&format=png&color=1A1A1A" alt="Logo" className="rounded-full w-[18px] h-auto" />
+                                                </div>
+
+                                                <div className="absolute top-[4px] right-[4px] bg-blue-600 p-1 rounded-lg">
+                                                    <img src="https://img.icons8.com/?size=100&id=7789&format=png&color=1A1A1A" alt="Send prompt" className="invert rounded-full w-[24px] h-auto" onClick={handlePrompt} />
+                                                </div>
+
+                                            </div>
+
                                         </div>
-                                        <div className="text-center text-[16px] leading-5 text-white">Multilingual Support</div>
-                                        <div>Choose language for better interaction.</div>
                                     </div>
-                                </div>
+                                }
 
-                                <div className="flex flex-col gap-2 w-full mt-[12px]">
+                                {messages.map((msg, idx) => (
+                                    <Message
+                                        key={msg._id || idx}
+                                        sender={msg.sender}
+                                        text={msg.text}
+                                        style={{ minHeight: idx === lastBotIndex ? `${responseHeight}px` : "auto", }}
+                                        ref={idx === lastUserIndex ? latestUserRef : idx === lastBotIndex ? latestBotRef : null}
+                                    />
+                                ))}
 
-                                    <div className="flex justify-center gap-6 text-sm text-[#969696]">
-                                        <div>All</div>
-                                        <div>Text</div>
-                                        <div>Image</div>
-                                        <div>Video</div>
-                                        <div>Music</div>
-                                        <div>Analytics</div>
-                                    </div>
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                    {/* SearchBar */}
+                    {(messages.length > 0) &&
+                        <div className="sticky bottom-0 flex flex-col items-center w-full h-17 bg-black" ref={searchBarRef}>
+
+                            <div className="relative flex justify-center w-full">
+
+                                <div className="absolute -top-2 max-w-[780px] w-full min-w-[600px]">
 
                                     <div className="relative w-full rounded-lg bg-white text-black">
 
@@ -649,24 +841,32 @@ const Home = () => {
                                             <img src="/logo-nobg.png" alt="Logo" className="rounded-full w-[28px] h-auto" />
                                         </div>
 
-                                        <input type="text" placeholder="Ask Anything" className="h-[40px] w-full indent-8 outline-0" value={promptText} onChange={(e) => setFolderName(e.target.value)}/>
+                                        <input
+                                            type="text"
+                                            placeholder="Ask Anything"
+                                            className="h-[40px] w-full indent-8 outline-0"
+                                            value={promptText}
+                                            onChange={(e) => setPromptText(e.target.value)}
+                                            onKeyDown={onHitEnter}
+                                            ref={inputBarRef}
+                                        />
 
                                         <div className="absolute top-[10px] right-[40px]">
                                             <img src="https://img.icons8.com/?size=100&id=jkqQE2I90I8R&format=png&color=1A1A1A" alt="Logo" className="rounded-full w-[18px] h-auto" />
                                         </div>
 
                                         <div className="absolute top-[4px] right-[4px] bg-blue-600 p-1 rounded-lg">
-                                            <img src="https://img.icons8.com/?size=100&id=7789&format=png&color=1A1A1A" alt="Send prompt" className="invert rounded-full w-[24px] h-auto" onClick={handlePrompt}/>
+                                            <img src="https://img.icons8.com/?size=100&id=7789&format=png&color=1A1A1A" alt="Send prompt" className="invert rounded-full w-[24px] h-auto" onClick={handlePrompt} />
                                         </div>
 
                                     </div>
-
                                 </div>
+                                <div className="absolute top-10 text-[12px] text-white">SageAI can make mistakes. Check important info.</div>
                             </div>
 
+                            
                         </div>
-
-                    </div>
+                    }
 
                 </div>
 
