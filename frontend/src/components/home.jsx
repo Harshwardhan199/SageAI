@@ -420,7 +420,7 @@ const Home = () => {
             if (!currentChat) {
                 try {
                     const promptRes = await api.post("/user/chat", { prompt }, { withCredentials: true });
-                    const resData = promptRes.data.markdownResponse
+                    const resData = promptRes.data.llmResponse
 
                     console.log(resData);
                     
@@ -441,7 +441,7 @@ const Home = () => {
             // Prompt on continued chat
             try {
                 const promptRes = await api.post("/user/chat", { prompt, currentChat }, { withCredentials: true });
-                const resData = promptRes.data.markdownResponse
+                const resData = promptRes.data.llmResponse
 
                 console.log(resData);
 
@@ -460,7 +460,7 @@ const Home = () => {
             // Temp chat prompt
             try {
                 const promptRes = await axios.post("http://localhost:5000/api/temp/chat", { prompt });
-                const resData = promptRes.data.markdownResponse
+                const resData = promptRes.data.llmResponse
 
                 console.log(resData);
 

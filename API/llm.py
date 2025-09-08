@@ -3,8 +3,14 @@ from fastapi import FastAPI
 from fastapi.responses import PlainTextResponse
 from pydantic import BaseModel
 import requests
+from sentence_transformers import SentenceTransformer
 
 app = FastAPI()
+
+class EmbedRequest(BaseModel):
+    text: str
+
+embedding_model = SentenceTransformer('all-MiniLM-L6-v2') 
 
 class ChatRequest(BaseModel):
     model: str
@@ -36,3 +42,11 @@ def chat(payload: ChatRequest):
 
     except requests.exceptions.RequestException as e:
         return f"Error: {e}"
+
+@app.post("/embed")
+async def get_embedding(req: EmbedRequest):
+    """
+    Generate embedding for a given text.
+    """
+    embedding = embedding_model.encode(req.text).tolist()  
+    return {"embedding": embedding}

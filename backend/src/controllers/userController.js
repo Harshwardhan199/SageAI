@@ -5,6 +5,9 @@ const Folder = require("../models/Folder");
 const Chat = require("../models/Chat");
 const Message = require("../models/Messasge");
 
+const { getRedis } = require("../db");
+
+// User data fetching functions
 const getCurrentUser = async (req, res) => {
   try {
     const user = await User.findById(req.user.userId).select("username email");
@@ -98,6 +101,10 @@ const deleteChat = async (req, res) => {
     // Also delete related messages
     await Message.deleteMany({ chatId: chat._id });
 
+    // Delete Redis context for this chat
+    const redis = getRedis();
+    await redis.del(`chat_context:${chat._id}`);
+
     res.json({ message: "Chat Deleted  Successfully", chat });
   } catch (err) {
     res.status(500).json({ error: "Server error" });
@@ -119,6 +126,25 @@ const getUserChats = async (req, res) => {
   }
 };
 
+const getChat = async (req, res) => {
+  try {
+
+    const user = await User.findById(req.user.userId);
+    if (!user) return res.status(404).json({ error: "User not found" });
+
+    const { chatId } = req.body;
+
+    // retrive messages 
+    const messages = await Message.find({ chatId }).sort({ createdAt: 1 })
+
+    res.status(200).json({ messages });
+
+  } catch (err) {
+    res.status(500).json({ error: "Server error" });
+  }
+};
+
+// Response formatter
 function formatResponse(raw) {
   if (!raw || typeof raw !== "string") return raw;
 
@@ -165,136 +191,112 @@ function formatResponse(raw) {
   return formatted;
 }
 
+// Context Setter functions
+const addToRedisContext = async (chatId, messageObj) => {
+  const redis = getRedis();
+  const key = `chat_context:${chatId}`;
+  await redis.rPush(key, JSON.stringify(messageObj));
+  await redis.lTrim(key, -10, -1);
+};
+
+const getRedisContext = async (chatId) => {
+  const redis = getRedis();
+  const key = `chat_context:${chatId}`;
+  const msgs = await redis.lRange(key, 0, -1);
+  return msgs.map(m => JSON.parse(m));
+};
+
+const generateEmbedding = async (text) => {
+  try {
+    const res = await axios.post("http://127.0.0.1:8000/embed", { text });
+    return res.data.embedding; 
+  } catch (err) {
+    console.error("Error generating embedding:", err);
+    return [];
+  }
+};
+
+// Main function
 const chat = async (req, res) => {
   try {
     const user = await User.findById(req.user.userId);
-
     if (!user) return res.status(404).json({ error: "User not found" });
 
     let { currentChat, prompt } = req.body;
 
+    // Create chat if not exists
     if (!currentChat) {
-
-      //Create Chat
-      const chat = new Chat({
+      const chatDoc = new Chat({
         userId: user._id,
         title: prompt,
-        lastMessageAt: new Date(),
+        lastMessageAt: new Date()
       });
-      await chat.save();
-      currentChat = chat.id;
-
-      // Save message (Prompt)
-      const user_message = new Message({
-        chatId: currentChat,
-        sender: "user",
-        text: prompt,
-      });
-      await user_message.save();
-
-      // send prompt to api
-      try {
-        const apiRes = await axios.post("http://127.0.0.1:8000/chat", { "model": "llama3:latest", "message": prompt });
-
-        let rawResponse = apiRes.data;
-
-        console.log("Raw Response: ", rawResponse);
-
-        let cleanResponse = rawResponse;
-        if (typeof rawResponse === "string") {
-          try {
-            cleanResponse = JSON.parse(rawResponse);
-          } catch {
-            cleanResponse = rawResponse;
-          }
-        }
-
-        console.log("Formatting");
-        const markdownResponse = formatResponse(cleanResponse);
-        console.log("Done Formatting");
-
-        // Save message (Prompt)
-        const bot_message = new Message({
-          chatId: currentChat,
-          sender: "bot",
-          text: markdownResponse,
-        });
-        await bot_message.save();
-
-        //log
-        console.log("Response: ", markdownResponse);
-
-        // Response
-        return res.json({ message: "Chat Created Successfully", currentChat, markdownResponse });
-
-      } catch (error) {
-        console.log(error);
-
-        return res.status(500).json({ error: "API error" });
-      }
-
+      await chatDoc.save();
+      currentChat = chatDoc._id;
     }
 
-    // Save message (Prompt)
-    const user_message = new Message({
+    // Generate embedding for prompt
+    const embedding = await generateEmbedding(prompt);
+
+    // Save user message with embedding
+    const userMessage = new Message({
       chatId: currentChat,
       sender: "user",
       text: prompt,
+      embedding
     });
-    await user_message.save();
+    await userMessage.save();
 
-    // send prompt to api
-    const apiRes = await axios.post("http://127.0.0.1:8000/chat", { "model": "llama3:latest", "message": prompt });
+    // Add to Redis short-term context
+    await addToRedisContext(currentChat, userMessage);
 
-    let rawResponse = apiRes.data;
+    // Retrieve Redis context
+    const contextMessages = await getRedisContext(currentChat);
 
-    console.log("Raw Response: ", rawResponse);
-
-    let cleanResponse = rawResponse;
-    if (typeof rawResponse === "string") {
-      try {
-        cleanResponse = JSON.parse(rawResponse);
-      } catch {
-        cleanResponse = rawResponse;
+    // Retrieve semantic matches from MongoDB Atlas Vector Search (long-term)
+    const semanticMatches = await Message.aggregate([
+      {
+        $vectorSearch: {
+          index: "message_embedding_index",
+          queryVector: embedding,
+          path: "embedding",
+          numCandidates: 100,
+          limit: 5
+        }
       }
-    }
+    ]);
 
-    console.log("Formatting");
-    const markdownResponse = formatResponse(cleanResponse);
-    console.log("Done Formatting");
+    // Construct LLM input (Redis context + top semantic matches)
+    const llmContext = [
+      ...contextMessages.map(m => `${m.sender}: ${m.text}`),
+      ...semanticMatches.map(m => `history: ${m.text}`)
+    ].join("\n");
 
-    // Save message (Prompt)
-    const bot_message = new Message({
+    // Send prompt + context to FastAPI → LLaMA3
+    const apiRes = await axios.post("http://127.0.0.1:8000/chat", {
+      model: "llama3:latest",
+      message: llmContext
+    });
+
+    const llmResponse = formatResponse(apiRes.data);
+
+    // Save bot response (with embedding)
+    const botEmbedding = await generateEmbedding(llmResponse);
+
+    const botMessage = new Message({
       chatId: currentChat,
       sender: "bot",
-      text: markdownResponse,
+      text: llmResponse,
+      embedding: botEmbedding
     });
-    await bot_message.save();
+    await botMessage.save();
 
-    //log
-    console.log("Response: ", markdownResponse);
-
-    // Response
-    return res.json({ message: "Response to prompt", markdownResponse });
+    // Update Redis context with bot response
+    await addToRedisContext(currentChat, botMessage);
+    
+    return res.json({ message: "Response generated", currentChat, llmResponse });
   } catch (err) {
-    res.status(500).json({ error: "Server error" });
-  }
-};
-
-const getChat = async (req, res) => {
-  try {
-
-    const user = await User.findById(req.user.userId);
-    if (!user) return res.status(404).json({ error: "User not found" });
-
-    const { chatId } = req.body;
-
-    // retrive messages 
-    const messages = await Message.find({ chatId }).sort({ createdAt: 1 })
-
-    res.status(200).json({ messages });
-
-  } catch (err) {
+    console.error(err);
     res.status(500).json({ error: "Server error" });
   }
 };

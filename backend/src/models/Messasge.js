@@ -16,18 +16,21 @@ const messageSchema = new mongoose.Schema({
     responseTimeMs: { type: Number }
   },
 
-  // NEW: embedding ID for vector DB integration
-  embeddingId: { type: mongoose.Schema.Types.ObjectId, ref: "Vector", default: null },
+  // NEW: embedding for vector search
+  embedding: { type: [Number], default: [] },
 
-  // NEW: summary field for old messages (context trimming)
+  // optional summary for old messages (context pruning)
   summary: { type: String, default: "" },
 
-  // NEW: mark if this message is currently part of the active context window
+  // mark if this message is currently part of Redis context
   isContextual: { type: Boolean, default: true }
 
 }, { timestamps: true });
 
-// Index to fetch messages in order for a chat
+// Efficient query for chat history
 messageSchema.index({ chatId: 1, createdAt: 1 });
+
+// Optional: vector search index (for Atlas UI)
+messageSchema.index({ embedding: "vector" }); // Atlas uses this to detect vector field
 
 module.exports = mongoose.model("Message", messageSchema);
