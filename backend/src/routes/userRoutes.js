@@ -1,18 +1,21 @@
 const express = require("express");
 const router = express.Router();
 const authMiddleware = require("../middleware/authMiddleware");
-const { getCurrentUser, createFolder, deleteFolder, getUserFolders, chat, getChat, deleteChat, getUserChats } = require("../controllers/userController");
 
-router.get("/me", authMiddleware, getCurrentUser);
+const { getCurrentUser, createFolder, deleteFolder, getUserFolders, getChat, deleteChat, getUserChats } = require("../controllers/userController");
+const { chat } = require("../controllers/chatController");
 
-router.post("/createFolder", authMiddleware, createFolder);
+router.get("/me", authMiddleware, getCurrentUser); //get user
+
+router.post("/createFolder", authMiddleware, createFolder); //create folder
 router.get("/folders", authMiddleware, getUserFolders); //get folders
-router.post("/deleteFolder", authMiddleware, deleteFolder); 
+router.post("/deleteFolder", authMiddleware, deleteFolder); //delete folder
 
 router.get("/chats", authMiddleware, getUserChats); //get chats
-router.post("/deleteChat", authMiddleware, deleteChat); 
+router.post("/deleteChat", authMiddleware, deleteChat); //delete chat
+
+router.post("/getChat", authMiddleware, getChat); //load current chat
 
 router.post("/chat", authMiddleware, chat); //handles prompt
 
-router.post("/getChat", authMiddleware, getChat);
 module.exports = router;
