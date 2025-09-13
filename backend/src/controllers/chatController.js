@@ -57,8 +57,17 @@ function formatResponse(raw) {
 const addToRedisContext = async (chatId, messageObj) => {
   const redis = getRedis();
   const key = `chat_context:${chatId}`;
-  await redis.rPush(key, JSON.stringify(messageObj));
-  await redis.lTrim(key, -10, -1);
+
+  // Store only essential fields
+  const cleanMsg = {
+    sender: messageObj.sender,
+    text: messageObj.text,
+    timestamp: new Date().toISOString()
+  };
+
+  await redis.rPush(key, JSON.stringify(cleanMsg));
+  await redis.lTrim(key, -10, -1); 
+  await redis.expire(key, 60 * 60 * 24); 
 };
 
 const getRedisContext = async (chatId) => {
@@ -74,7 +83,7 @@ const generateEmbedding = async (text) => {
     return res.data.embedding; 
   } catch (err) {
     console.error("Error generating embedding:", err);
-    return [];
+    return null;
   }
 };
 
@@ -123,7 +132,8 @@ const chat = async (req, res) => {
           queryVector: embedding,
           path: "embedding",
           numCandidates: 100,
-          limit: 5
+          limit: 5,
+          filter: { chatId: currentChat }
         }
       }
     ]);

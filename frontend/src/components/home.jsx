@@ -10,29 +10,23 @@ import Message from "./message"
 const Home = () => {
     const navigate = useNavigate();
 
+    // User
     const { accessToken, setAccessToken, user, setUser } = useAuth();
-
     const [username, setUsername] = useState("");
 
+    // Sidebar Toggle 
+    const refSidebar = useRef(null);
     const [toggleSidebar, setToggleSidebar] = useState(false);
     const [sidebarHover, setSidebarHover] = useState(false);
     const [leftSideToggleClicked, setLeftSideToggleClicked] = useState(false);
 
+    // Other ref's in Sidebar
+    const refLogo = useRef(null);
+    const refNewChat = useRef(null);
+
+    // Ungrouped Chats 
     const [showChats, setShowChats] = useState(true);
     const [chatsWindowHeight, setChatWindowHeight] = useState("0px");
-
-    const [showFolders, setShowFolders] = useState(true);
-    const [foldersWindowHeight, setFoldersWindowHeight] = useState("0px");
-
-    const [folderPopup, setFolderPopup] = useState(false);
-    const [folderName, setFolderName] = useState("");
-    const [folderColor, setFolderColor] = useState("");
-
-    const [folders, setFolders] = useState([]);
-    const [foldersCount, setFoldersCount] = useState(0);
-
-    const [folderMenuId, setFolderMenuId] = useState(null);
-    const folderMenuRef = useRef(null);
 
     const [chats, setChats] = useState([]);
     const [chatsCount, setChatsCount] = useState(0);
@@ -40,21 +34,29 @@ const Home = () => {
     const [chatMenuId, setChatMenuId] = useState(null);
     const chatMenuRef = useRef(null);
 
-    const refSidebar = useRef(null);
+    const refChatsExpandBtn = useRef(null);
+    const refChats = useRef(null);
 
-    const refLogo = useRef(null);
+    // All Folders
+    const [showFolders, setShowFolders] = useState(true);
+    const [foldersWindowHeight, setFoldersWindowHeight] = useState("0px");
 
-    const refNewChat = useRef(null);
+    const [folders, setFolders] = useState([]);
 
-    const refChatsWindow = useRef(null);
-    const refFoldersWindow = useRef(null);
+    const [folderMenuId, setFolderMenuId] = useState(null);
+    const folderMenuRef = useRef(null);
+
+    const [folderPopup, setFolderPopup] = useState(false);
+    const [folderName, setFolderName] = useState("");
+    const [folderColor, setFolderColor] = useState("");
 
     const refFoldersExpandBtn = useRef(null);
     const refFolderChat = useRef(null);
 
-    const refChatsExpandBtn = useRef(null);
-    const refChats = useRef(null);
+    // Folder's Chats
+    const [openFolders, setOpenFolders] = useState({});
 
+    // MainArea 
     const refMainarea = useRef(null);
 
     const [currentChat, setCurrentChat] = useState("");
@@ -72,6 +74,7 @@ const Home = () => {
 
     const [responseHeight, setResponseHeight] = useState(0);
 
+    // Sidebar Toggle
     const LeftSideToggle = () => {
         if (!leftSideToggleClicked) {
 
@@ -266,42 +269,54 @@ const Home = () => {
         // Get User Folders
         let fCount;
         try {
-            //console.log("trying to get folders");
-
             const res = await api.get("/user/folders");
 
-            //console.log("milgaye folders: ", res);
+            const loadedFolders = res.data.folders;
 
-            setFolders(res.data.folderList);
-            // console.log("Folders: ", res.data.folderList);
+            setFolders(res.data.folders);
 
-            fCount = res.data.folderList.length;
-            setFoldersCount(res.data.folderList.length);
+            fCount = loadedFolders.length;
+
+            // Show folders - make enough Space
+            if (showFolders) {
+                
+                let fullHeightFolders = ((fCount * 40) + ((fCount - 1) * 4));
+
+                // Add height for chats of already opened folders
+                loadedFolders.forEach(f => {
+                    if (openFolders[f._id]) {
+                        fullHeightFolders += (f.chats.length * 40) + (f.chats.length * 4);
+                    }
+                });
+
+                if (fCount == 0){
+                    fullHeightFolders = 40;
+                }
+                setFoldersWindowHeight(`${fullHeightFolders}px`);
+            }
+
         } catch (error) {
             console.error("Error fetching folders:", error.response?.data || error.message);
             return null;
         }
-
-        // Show folders - make enough Space
-        if (showFolders) {
-            const fullHeightFolders = `${((fCount * 40) + ((fCount - 1) * 4))}px`;
-
-            setFoldersWindowHeight(fullHeightFolders);
-        }
-        return null;
     };
 
     // Toggling Folder list
     const ToggleFolderList = async () => {
         if (!showFolders) {
-            const fullHeightFolders = `${((foldersCount * 40) + ((foldersCount - 1) * 4))}px`;
-            setFoldersWindowHeight(fullHeightFolders);
-        } else {
-            const fullHeightFolders = `${0}px`;
-            setFoldersWindowHeight(fullHeightFolders);
-            requestAnimationFrame(() => {
-                setFoldersWindowHeight("0px");
+            // Base height: one row per folder
+            let totalHeight = (folders.length * 40) + ((folders.length - 1) * 4);
+
+            // Add chats heights of all already-opened folders
+            folders.forEach(f => {
+                if (openFolders[f._id]) {
+                    totalHeight += (f.chats.length * 40) + (f.chats.length * 4);
+                }
             });
+
+            setFoldersWindowHeight(`${totalHeight}px`);
+        } else {
+            setFoldersWindowHeight("0px");
         }
 
         setShowFolders(!showFolders);
@@ -309,14 +324,46 @@ const Home = () => {
     };
 
     // Open Folder 
-    const OpenFolder = () => {
+    const OpenFolder = (folderId) => {
 
+        setOpenFolders(prev => {
+            const isCurrentlyOpen = prev[folderId];
+
+            let totalHeight = (folders.length * 40) + ((folders.length - 1) * 4);
+
+            // total height required by (currently selected folder if its not opened)  & (all opened chats of currently opened folders)
+            folders.forEach(f => {
+                if ((f._id === folderId && !isCurrentlyOpen) || (f._id !== folderId && prev[f._id])) {
+                    totalHeight += (f.chats.length * 40) + (f.chats.length * 4);
+                }
+            });
+
+            setFoldersWindowHeight(`${totalHeight}px`);
+
+            return { ...prev, [folderId]: !isCurrentlyOpen };
+        });
     };
 
     // Toggle chat options menu
     const toggleChatMenu = (chatId) => {
         setChatMenuId((prev) => (prev === chatId ? null : chatId));
         setFolderMenuId(null);
+    };
+
+    // Move chat
+    const handleMoveChat = async (chatId, folderId) => {
+        try {
+            await api.post("/user/moveChat", { chatId, folderId }, { withCredentials: true });
+
+        } catch (error) {
+            console.error("Error Moving Chat:", error.response?.data || error.message);
+            return null;
+        }
+
+        toggleChatMenu(null);
+
+        LoadChats();
+        LoadFolders();
     };
 
     // Delete Chat
@@ -341,11 +388,11 @@ const Home = () => {
         try {
             const res = await api.get("/user/chats");
 
-            setChats(res.data.chatList);
-            //console.log("Chats: ", res.data.chatList);
+            setChats(res.data.ungroupedChats);
+            //console.log("Chats: ", res.data.ungroupedChats);
 
-            cCount = res.data.chatList.length;
-            setChatsCount(res.data.chatList.length);
+            cCount = res.data.ungroupedChats.length;
+            setChatsCount(res.data.ungroupedChats.length);
         } catch (error) {
             console.error("Error fetching chats:", error.response?.data || error.message);
             return null;
@@ -396,7 +443,8 @@ const Home = () => {
 
     // New Chat 
     const handleNewChat = async () => {
-        navigate(0);
+        setCurrentChat("");
+        setMessages([]);
     };
 
     // Send prompt req
@@ -423,7 +471,7 @@ const Home = () => {
                     const resData = promptRes.data.llmResponse
 
                     console.log(resData);
-                    
+
                     //response
                     setMessages((prev) => prev.map((msg) => msg._id === botId ? { ...msg, text: resData } : msg));
 
@@ -598,81 +646,176 @@ const Home = () => {
                                     </div>
                                 </div>
 
-                                {/* Folders List*/}
-                                <div className={`flex flex-col gap-1 w-full rounded-lg  overflow-visible transition-all duration-300 ease-in-out ${showFolders ? "opacity-100" : "opacity-0"}`} ref={refFoldersWindow} style={{ height: foldersWindowHeight }}>
+                                {/* Folders List */}
+                                <div className={`flex flex-col gap-1 w-full rounded-lg overflow-visible transition-all duration-300 ease-in-out ${showFolders ? "opacity-100" : "opacity-0"}`} style={{ height: foldersWindowHeight }}>
 
-                                    {folders.map((folder) => (
-                                        <div key={folder._id} className={`${folder.color} rounded-lg overflow-visible`}>
-                                            <div className="flex item-center justify-between ml-[5px] rounded-r-lg bg-[#272727] p-2 overflow-visible">
-                                                <div className="flex gap-2">
-                                                    <div className="flex items-center">
-                                                        <img src="https://img.icons8.com/?size=100&id=82790&format=png&color=ffffff" alt="Folder" className="w-[20px] h-auto flex-shrink-0" />
-                                                    </div>
-                                                    <div>{folder.name}</div>
+                                    {(folders.length == 0) &&
+                                        <div className="flex w-full mb-1">
+                                            <div className="flex item-center gap-2 h-[40px] w-full rounded-lg bg-[#1f1f1f] p-2 text-white overflow-hidden whitespace-nowrap" onClick={CreateFolderPopup}>
+                                                <div className="flex items-center flex-shrink-0">
+                                                    <img src="https://img.icons8.com/?size=100&id=WDLQ4iMx1qkz&format=png&color=ffffff" alt="Logo" className="w-[24px] h-auto" />
                                                 </div>
-                                                <div className="relative flex items-center overflow-visible">
-                                                    <img src="https://img.icons8.com/?size=100&id=102729&format=png&color=dddddd" alt="options" className="options-button w-[14px] h-auto flex-shrink-0" onClick={() => toggleFolderMenu(folder._id)} />
-                                                    {folderMenuId === folder._id && (
-                                                        <div className="menu-container absolute -left-[15px] -bottom-[90px] flex flex-col gap-1 p-1 bg-[#272727] border-1 border-[#393939] drop-shadow rounded-lg z-1" ref={folderMenuRef}>
-                                                            <div className="px-3 py-1 rounded-lg hover:bg-[#323232]">Customize</div>
+                                                <div className="transition-all duration-300 ease-in-out">Create New Folder</div>
+                                            </div>
+                                        </div>
+                                    }
+
+                                    {folders.map((folder) => {
+                                        const isOpen = openFolders[folder._id];
+                                        const chatsCount = folder.chats.length;
+                                        const folderChatsWindowHeight = isOpen ? `${(chatsCount * 40) + ((chatsCount - 0) * 4)}px` : "0px";
+
+                                        return (
+                                            <div key={folder._id}>
+
+                                                {/* Folder Title Bar */}
+                                                <div className={`${folder.color} rounded-lg overflow-visible group`} onClick={() => OpenFolder(folder._id)} >
+                                                    <div className="flex item-center justify-between ml-[5px] rounded-r-lg bg-[#1f1f1f] overflow-visible">
+                                                        <div className="flex gap-2 p-2">
+                                                            <div className="flex items-center">
+                                                                <img src={`${isOpen ? "https://img.icons8.com/?size=100&id=82790&format=png&color=ffffff" : "https://img.icons8.com/?size=100&id=82843&format=png&color=cccccc"}`}
+                                                                    alt="Folder"
+                                                                    className="w-[20px] h-auto flex-shrink-0"
+                                                                />
+                                                            </div>
+                                                            <div>{folder.name}</div>
+                                                        </div>
+                                                        <div className="relative flex items-center overflow-visible opacity-0 group-hover:opacity-100"
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                toggleFolderMenu(folder._id)
+                                                            }}
+                                                        >
+                                                            <img src="https://img.icons8.com/?size=100&id=102729&format=png&color=dddddd"
+                                                                alt="options"
+                                                                className="options-button w-[14px] h-auto flex-shrink-0 mx-2"
+                                                            />
+                                                            {folderMenuId === folder._id && (
+                                                                <div className="menu-container absolute -left-[15px] top-full flex flex-col gap-1 p-1 bg-[#272727] border-1 border-[#393939] drop-shadow rounded-lg z-1" ref={folderMenuRef} onClick={(e) => e.stopPropagation()}>
+                                                                    <div className="px-3 py-1 rounded-lg hover:bg-[#323232]">Customize</div>
+                                                                    <div className="h-[1px] w-full bg-[#393939]"></div>
+                                                                    <div className="px-3 py-1 rounded-lg hover:bg-[#323232]" onClick={() => handleFolderDelete(folder._id)}>Delete</div>
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                {/* Folder's Chat */}
+                                                <div className={`flex flex-col item-center w-full pl-3 transition-all duration-200 ease-in-out ${isOpen ? "opacity-100" : "opacity-0 overflow-hidden"}`} style={{ height: folderChatsWindowHeight }} >
+                                                    {folder.chats.map((chat) => (
+                                                        <div className="flex flex-col item-center justify-between w-full rounded-lg bg-[#272727] gap-1 mt-1 overflow-visible group/chat" key={chat._id} onClick={() => OpenChat(chat._id)} >
+                                                            <div className="flex justify-between gap-2 overflow-visible">
+                                                                <div className="flex flex-1 items-center gap-2 p-2 overflow-hidden">
+                                                                    <div className="flex items-center w-full"><span className="truncate flex-1">{chat.title}</span></div>
+                                                                </div>
+
+                                                                <div className="relative flex items-center overflow-visible opacity-0 group-hover/chat:opacity-100"
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        toggleChatMenu(chat._id)
+                                                                    }}
+                                                                >
+                                                                    <img
+                                                                        src="https://img.icons8.com/?size=100&id=102729&format=png&color=dddddd"
+                                                                        alt="options"
+                                                                        className="options-button w-[14px] h-auto mx-2"
+                                                                    />
+                                                                    {chatMenuId === chat._id && (
+                                                                        <div className="menu-container absolute -left-[15px] top-full flex flex-col gap-1 min-w-23 p-1 bg-[#272727] border-1 border-[#393939] drop-shadow rounded-lg z-1" ref={chatMenuRef} onClick={(e) => e.stopPropagation()}>
+                                                                            <div className="px-3 py-1 rounded-lg hover:bg-[#323232]">Rename</div>
+                                                                            <div className="h-[1px] w-full bg-[#393939]"></div>
+                                                                            <div className="relative group">
+                                                                                <div className="px-4 py-1 rounded-lg hover:bg-[#323232] flex justify-between items-center cursor-pointer gap-2">
+                                                                                    <div>Move to</div>
+                                                                                    <img src="https://img.icons8.com/?size=100&id=61&format=png&color=ffffff" alt="Move to" className="h-[14px]" />
+                                                                                </div>                                                                                <div className="absolute left-[97%] top-0 ml-1 hidden group-hover:flex flex-col gap-1 min-w-28 p-1 bg-[#272727] border border-[#393939] drop-shadow rounded-lg z-20">
+                                                                                    {folders.filter(f => f._id !== folder._id).map((f) => (
+                                                                                        <div key={f._id} className="px-3 py-1 rounded-lg hover:bg-[#323232]" onClick={() => handleMoveChat(chat._id, f._id)}>{f.name}</div>
+                                                                                    ))}
+                                                                                    <div className="h-[1px] w-full bg-[#393939]"></div>
+                                                                                    <div className="px-3 py-1 rounded-lg hover:bg-[#323232]" onClick={() => handleMoveChat(chat._id, null)}>Ungroup</div>
+                                                                                </div>
+                                                                            </div>
+
+                                                                            <div className="h-[1px] w-full bg-[#393939]"></div>
+                                                                            <div className="px-3 py-1 rounded-lg hover:bg-[#323232]" onClick={() => handleChatDelete(chat._id)}>Delete</div>
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+
+                                {/* Chats */}
+                                {chats.length > 0 &&
+                                    <div className={`flex item-center justify-between w-full rounded-xl bg-[#070707] py-2 text-sm transition-all duration-100 ease-in-out ${showFolders ? "mt-[10px]" : "mt-[0px]"}`}>
+                                        <div>Chats</div>
+                                        <div className="flex item-center justify-center gap-1">
+                                            <button className="h-[20px] rounded-md bg-[#272727] px-1" onClick={ToggleChatList}>
+                                                <img src="https://img.icons8.com/?size=100&id=R52ioYgkCvz6&format=png&color=1A1A1A" alt="expand-folders" className="invert w-[10px] h-auto transition-all duration-300" ref={refChatsExpandBtn} />
+                                            </button>
+                                        </div>
+                                    </div>}
+
+                            </div>
+
+                            {/* Chats List */}
+                            <div className={`overflow-visible transition-all duration-300 ease-in-out ${showChats ? "opacity-100" : "opacity-0"}`} style={{ height: chatsWindowHeight }}>
+
+                                <div className="flex flex-col gap-1 item-center w-full opacity-0 transition-all duration-300 ease-in-out overflow-visible whitespace-nowrap" ref={refChats}>
+                                    {chats.map((chat) => (
+                                        <div className="flex flex-col item-center justify-between w-full rounded-lg bg-[#272727] gap-1 overflow-visible group/chat" key={chat._id} onClick={() => OpenChat(chat._id)}>
+                                            <div className="flex justify-between gap-2 overflow-visible">
+                                                <div className="flex flex-1 items-center gap-2 p-2 overflow-hidden">
+                                                    <div className="flex items-center w-full"><span className="truncate flex-1">{chat.title}</span></div>
+                                                </div>
+
+                                                <div className="relative flex items-center overflow-visible opacity-0 group-hover/chat:opacity-100"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        toggleChatMenu(chat._id)
+                                                    }}
+                                                >
+                                                    <img src="https://img.icons8.com/?size=100&id=102729&format=png&color=dddddd"
+                                                        alt="options"
+                                                        className="options-button w-[14px] h-auto mx-2"
+                                                    />
+                                                    {chatMenuId === chat._id && (
+                                                        <div className="menu-container absolute -left-[15px] top-full flex flex-col gap-1 min-w-23 p-1 bg-[#272727] border-1 border-[#393939] drop-shadow rounded-lg z-1" ref={chatMenuRef} onClick={(e) => e.stopPropagation()}>
+                                                            <div className="px-3 py-1 rounded-lg hover:bg-[#323232]">Rename</div>
                                                             <div className="h-[1px] w-full bg-[#393939]"></div>
-                                                            <div className="px-3 py-1 rounded-lg hover:bg-[#323232]" onClick={() => handleFolderDelete(folder._id)}>Delete</div>
+                                                            <div className="relative group">
+                                                                <div className="px-4 py-1 rounded-lg hover:bg-[#323232] flex justify-between items-center cursor-pointer gap-2">
+                                                                    <div>Move to</div>
+                                                                    <img src="https://img.icons8.com/?size=100&id=61&format=png&color=ffffff" alt="Move to" className="h-[14px]" />
+                                                                </div>
+                                                                <div className="absolute left-[97%] top-0 ml-1 hidden group-hover:flex flex-col gap-1 min-w-28 p-1 bg-[#272727] border border-[#393939] drop-shadow rounded-lg z-20">
+                                                                    {folders.map((folder) => (
+                                                                        <div key={folder._id} className="px-3 py-1 rounded-lg hover:bg-[#323232]" onClick={() => handleMoveChat(chat._id, folder._id)}>{folder.name}</div>
+                                                                    ))}
+                                                                </div>
+                                                            </div>
+                                                            <div className="h-[1px] w-full bg-[#393939]"></div>
+                                                            <div className="px-3 py-1 rounded-lg hover:bg-[#323232]" onClick={() => handleChatDelete(chat._id)}>Delete</div>
                                                         </div>
                                                     )}
                                                 </div>
                                             </div>
-
                                         </div>
                                     ))}
-
-                                </div>
-
-                                {/* Chats */}
-                                <div className={`flex item-center justify-between w-full rounded-xl bg-[#070707] py-2 text-sm transition-all duration-100 ease-in-out ${showFolders ? "mt-[10px]" : "mt-[0px]"}`}>
-                                    <div>Chats</div>
-                                    <div className="flex item-center justify-center gap-1">
-                                        <button className="h-[20px] rounded-md bg-[#272727] px-1" onClick={ToggleChatList}>
-                                            <img src="https://img.icons8.com/?size=100&id=R52ioYgkCvz6&format=png&color=1A1A1A" alt="expand-folders" className="invert w-[10px] h-auto transition-all duration-300" ref={refChatsExpandBtn} />
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Chats List */}
-                            <div className={`overflow-visible transition-all duration-300 ease-in-out ${showChats ? "opacity-100" : "opacity-0"}`} ref={refChatsWindow} style={{ height: chatsWindowHeight }}>
-
-                                <div className="opacity-0 transition-all duration-300 ease-in-out overflow-visible whitespace-nowrap" ref={refChats}>
-                                    <div className="flex flex-col gap-1 item-center w-full rounded-lg overflow-visible">
-
-                                        {chats.map((chat) => (
-                                            <div className="flex flex-col item-center justify-between w-full rounded-lg bg-[#272727] p-2 gap-1 overflow-visible" key={chat._id} onClick={() => OpenChat(chat._id)}>
-                                                <div className="flex justify-between gap-2 overflow-visible">
-                                                    <div className="flex flex-1 items-center gap-2 overflow-hidden">
-                                                        {/* <div className="flex items-center">
-                                                            <img src="https://img.icons8.com/?size=100&id=87085&format=png&color=ffffff" alt="chat" className="w-[20px] h-auto" />
-                                                        </div> */}
-                                                        <div className="flex items-center">{chat.title}</div>
-                                                    </div>
-
-                                                    <div className="relative flex items-center overflow-visible">
-                                                        <img src="https://img.icons8.com/?size=100&id=102729&format=png&color=dddddd" alt="options" className="options-button w-[14px] h-auto" onClick={() => toggleChatMenu(chat._id)} />
-                                                        {chatMenuId === chat._id && (
-                                                            <div className="menu-container absolute -left-[15px] -bottom-[90px] flex flex-col gap-1 w-23 p-1 bg-[#272727] border-1 border-[#393939] drop-shadow rounded-lg z-1" ref={chatMenuRef}>
-                                                                <div className="px-3 py-1 rounded-lg hover:bg-[#323232]">Rename</div>
-                                                                <div className="h-[1px] w-full bg-[#393939]"></div>
-                                                                <div className="px-3 py-1 rounded-lg hover:bg-[#323232]" onClick={() => handleChatDelete(chat._id)}>Delete</div>
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        ))}
-                                        {/* <div className="text-[12px] truncate">A 3-day trip to see the northern lights in norway</div> */}
-
-                                    </div>
                                 </div>
 
                             </div>
+
+                            {/* <div className="flex items-center">
+                                    <img src="https://img.icons8.com/?size=100&id=87085&format=png&color=ffffff" alt="chat" className="w-[20px] h-auto" />
+                                </div> */}
 
                             {/* Chats Bottom Line */}
                             <div className="h-1 w-full"></div>
@@ -723,7 +866,7 @@ const Home = () => {
                     </div>
 
                     {/* Content */}
-                    <div className="flex flex-col w-full flex-1 mt-[1px] items-center justify-center overflow-y-auto">
+                    <div className="flex flex-col w-full flex-1 mt-[1px] items-center justify-center px-2 overflow-y-auto">
 
                         <div className={`flex max-w-[780px] w-full min-w-[600px] h-min-[500px] rounded-2xl flex-grow-0 overflow-hidden ${messages.length == 0 ? "bg-[#161616]" : "h-full bg-transparent"}`}>
 
@@ -864,7 +1007,7 @@ const Home = () => {
                                 <div className="absolute top-10 text-[12px] text-white">SageAI can make mistakes. Check important info.</div>
                             </div>
 
-                            
+
                         </div>
                     }
 
@@ -877,7 +1020,7 @@ const Home = () => {
                         <div className="fixed inset-0 bg-black/50 backdrop-blur-[1px] z-[40]" onClick={() => setFolderPopup(!folderPopup)}></div>
 
                         {/* {Popup} */}
-                        <div className="fixed top-1/2 left-1/2 h-auto w-[400px] z-50 bg-[#282828] rounded-2xl shadow-gray-500 flex flex-col transform -translate-x-1/2 -translate-y-1/2 text-white">
+                        <div className="fixed top-1/2 left-1/2 h-auto w-[400px] z-50 bg-[#191919] rounded-2xl shadow-gray-500 flex flex-col transform -translate-x-1/2 -translate-y-1/2 text-white">
                             <div className="relative flex flex-col gap-5 px-10 py-10">
 
                                 <div className="absolute right-3 top-3 flex items-center rounded-full p-2 hover:bg-[#1c1c1c]">

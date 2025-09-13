@@ -41,6 +41,7 @@ const createFolder = async (req, res) => {
 };
 
 const deleteFolder = async (req, res) => {
+
   try {
     const user = await User.findById(req.user.userId);
 
@@ -56,10 +57,24 @@ const deleteFolder = async (req, res) => {
       return res.status(404).json({ error: "Folder not found or not authorized" });
     }
 
-    // (Optional) also set folderId = null for chats under this folder
-    // await Chat.updateMany({ folderId: folderId }, { $set: { folderId: null } });
+    const folderChats = await Chat.find({ userId: user._id, folderId: folderId });
 
-    res.json({ message: "Folder Deleted  Successfully", folder });
+    for (const entry of folderChats){
+      const chat = await Chat.findOneAndDelete({ _id: entry._id, userId: user._id });
+
+      if (!chat) {
+        return res.status(404).json({ error: "Chat not found or not authorized" });
+      }
+
+      // Also delete related messages
+      await Message.deleteMany({ chatId: chat._id });
+
+      // Delete Redis context for this chat
+      const redis = getRedis();
+      await redis.del(`chat_context:${chat._id}`);
+    };
+
+    res.json({ message: "Folder Deleted  Successfully" });
   } catch (err) {
     res.status(500).json({ error: "Server error" });
   }
@@ -71,9 +86,67 @@ const getUserFolders = async (req, res) => {
 
     if (!user) return res.status(404).json({ error: "User not found" });
 
-    const folderList = await Folder.find({ userId: req.user.userId }).sort({ createdAt: -1 });
+    // Fetch Folders
+    //const folderList = await Folder.find({ userId: req.user.userId }).sort({ createdAt: -1 }).lean();
+    const folderList = await Folder.find({ userId: req.user.userId }, { _id: 1, name: 1, color: 1 }).sort({ createdAt: -1 }).lean();
 
-    res.json({ folderList });
+    const folderIds = folderList.map(f => f._id);
+
+    //Fetch Chats by Folder
+    const chatsByFolder = await Chat.aggregate([
+      { $match: { userId: user._id, folderId: { $in: folderIds } } },
+      { $sort: { createdAt: -1 } },
+      {
+        $group: {
+          _id: "$folderId",
+          chats: { $push: { _id: "$_id", title: "$title" } }
+        }
+      },
+      {
+        $project: {
+          chats: { $slice: ["$chats", 10] }
+        }
+      }
+    ]);
+
+    const chatsMap = {};
+    chatsByFolder.forEach(entry => {
+      chatsMap[entry._id.toString()] = entry.chats;
+    });
+
+    const foldersWithChats = folderList.map(folder => ({
+      _id: folder._id,
+      name: folder.name,
+      color: folder.color,
+      chats: chatsMap[folder._id.toString()] || []
+    }));
+
+    res.json({ folders: foldersWithChats });
+  } catch (err) {
+    res.status(500).json({ error: "Server error" });
+  }
+};
+
+const moveChat = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.userId);
+
+    if (!user) return res.status(404).json({ error: "User not found" });
+
+    const { chatId, folderId } = req.body;
+
+    if (!chatId) return res.status(400).json({ error: "Chat ID is required" });
+
+    const chat = await Chat.findOne({ _id: chatId, userId: user._id });
+
+    if (!chat) {
+      return res.status(404).json({ error: "Chat not found or not authorized" });
+    }
+
+    chat.folderId = folderId;
+    await chat.save();
+
+    res.json({ message: "Chat moved  Successfully", chat });
   } catch (err) {
     res.status(500).json({ error: "Server error" });
   }
@@ -108,17 +181,17 @@ const deleteChat = async (req, res) => {
   }
 };
 
-const getUserChats = async (req, res) => {
+const getUngroupedChats = async (req, res) => {
   try {
     const user = await User.findById(req.user.userId);
-
     if (!user) return res.status(404).json({ error: "User not found" });
 
-    const chatList = await Chat.find({ userId: user._id }).sort({ lastMessageAt: -1 })
+    // Fetch only chats not in any folder
+    const ungroupedChats = await Chat.find({ userId: user._id, folderId: null }).sort({ lastMessageAt: -1 }).select({ _id: 1, title: 1 }).lean();
 
-    res.json({ chatList });
-
+    res.json({ ungroupedChats });
   } catch (err) {
+    console.error(err);
     res.status(500).json({ error: "Server error" });
   }
 };
@@ -141,4 +214,4 @@ const getChat = async (req, res) => {
   }
 };
 
-module.exports = { getCurrentUser, createFolder, deleteFolder, getUserFolders, getChat, deleteChat, getUserChats }; 
+module.exports = { getCurrentUser, createFolder, deleteFolder, getUserFolders, getChat, moveChat, deleteChat, getUngroupedChats }; 
