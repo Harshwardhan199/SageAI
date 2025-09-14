@@ -3,7 +3,7 @@ const router = express.Router();
 const authMiddleware = require("../middleware/authMiddleware");
 
 const { getCurrentUser, createFolder, deleteFolder, getUserFolders, getChat, moveChat, deleteChat, getUngroupedChats } = require("../controllers/userController");
-const { chat } = require("../controllers/chatController");
+const { chat, feedback } = require("../controllers/chatController");
 
 router.get("/me", authMiddleware, getCurrentUser); //get user
 
@@ -18,5 +18,6 @@ router.post("/deleteChat", authMiddleware, deleteChat); //delete chat
 router.post("/getChat", authMiddleware, getChat); //load current chat
 
 router.post("/chat", authMiddleware, chat); //handles prompt
+router.post("/feedback", authMiddleware, feedback); //handles prompt
 
 module.exports = router;

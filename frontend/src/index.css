@@ -5,3 +5,42 @@
   scrollbar-width: thin;
   scrollbar-color: #17181a #282c34;
 }
+
+.markdown p {
+  margin-bottom: 1em;
+}
+
+.markdown ol {
+  padding-left: 1.5em;
+  margin-bottom: 1em;
+  list-style-type: decimal; 
+}
+
+.markdown ul {
+  padding-left: 1.5em;
+  margin-bottom: 1em;
+  list-style-type: disc; 
+}
+
+.markdown li {
+  margin-bottom: 0.5em;
+}
+
+.markdown strong {
+  font-weight: 600;
+}
+
+.markdown em {
+  font-style: italic;
+}
+
+.markdown code {
+  background-color: rgba(255, 255, 255, 0.1);
+  padding: 0.2em 0.4em;
+  border-radius: 4px;
+  font-family: monospace;
+}
+
+.markdown pre {
+  margin: 1em 0;
+}

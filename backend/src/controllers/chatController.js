@@ -66,8 +66,8 @@ const addToRedisContext = async (chatId, messageObj) => {
   };
 
   await redis.rPush(key, JSON.stringify(cleanMsg));
-  await redis.lTrim(key, -10, -1); 
-  await redis.expire(key, 60 * 60 * 24); 
+  await redis.lTrim(key, -10, -1);
+  await redis.expire(key, 60 * 60 * 24);
 };
 
 const getRedisContext = async (chatId) => {
@@ -80,7 +80,7 @@ const getRedisContext = async (chatId) => {
 const generateEmbedding = async (text) => {
   try {
     const res = await axios.post("http://127.0.0.1:8000/embed", { text });
-    return res.data.embedding; 
+    return res.data.embedding;
   } catch (err) {
     console.error("Error generating embedding:", err);
     return null;
@@ -140,6 +140,15 @@ const chat = async (req, res) => {
 
     // Construct LLM input (Redis context + top semantic matches)
     const llmContext = [
+      // System-level instruction to the model
+      `Whenever the user requests a quiz, return the quiz in JSON format with both questions and answers, each question with 4 options and correct option(full content not number) as answer. 
+      Format example:
+      [
+        { "question": "What is 2+2?", "options": ["3","4","5", "6"], "answer": "4" },
+        { "question": "Capital of France?", "options": ["Paris","Berlin","London","Madrid"], "answer": "Paris" }
+      ]
+      Only use this format for quizzes. For other messages, reply normally.`,
+
       ...contextMessages.map(m => `${m.sender}: ${m.text}`),
       ...semanticMatches.map(m => `history: ${m.text}`)
     ].join("\n");
@@ -165,7 +174,7 @@ const chat = async (req, res) => {
 
     // Update Redis context with bot response
     await addToRedisContext(currentChat, botMessage);
-    
+
     return res.json({ message: "Response generated", currentChat, llmResponse });
   } catch (err) {
     console.error(err);
@@ -173,4 +182,38 @@ const chat = async (req, res) => {
   }
 };
 
-module.exports = { chat }; 
+// Quiz Feedback
+const feedback = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.userId);
+    if (!user) return res.status(404).json({ error: "User not found" });
+
+    let { currentChat, prompt } = req.body;
+
+    const systemPrompt = `
+      SYSTEM: You are a quiz explanation assistant. 
+      Your task: explain why the user's answer is wrong, 
+      or just correct them if it's factual. 
+      And do no state that user's answer is incorrect or wrong as user's asking you because its incorrect 
+      Never add extra chatty phrases or unrelated suggestions. 
+      Respond concisely.
+    `;
+
+    const llmInput = `${systemPrompt}\n\nUSER_PROMPT: ${prompt}`;
+
+    // Send prompt + context to FastAPI → LLaMA3
+    const apiRes = await axios.post("http://127.0.0.1:8000/chat", {
+      model: "llama3:latest",
+      message: llmInput
+    });
+
+    const llmResponse = formatResponse(apiRes.data);
+
+    return res.json({ message: "Response generated", currentChat, llmResponse });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Server error" });
+  }
+};
+
+module.exports = { chat, feedback }; 
