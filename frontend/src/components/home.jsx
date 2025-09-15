@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef, useState, useEffect, useContext } from "react";
+import { useLayoutEffect, useRef, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 
@@ -22,7 +22,9 @@ const Home = () => {
 
     // Other ref's in Sidebar
     const refLogo = useRef(null);
-    const refNewChat = useRef(null);
+
+    // State for Saved Prompts
+    const [showSavedPrompts, setShowSavedPrompts] = useState(false);
 
     // Ungrouped Chats 
     const [showChats, setShowChats] = useState(true);
@@ -35,7 +37,6 @@ const Home = () => {
     const chatMenuRef = useRef(null);
 
     const refChatsExpandBtn = useRef(null);
-    const refChats = useRef(null);
 
     // All Folders
     const [showFolders, setShowFolders] = useState(true);
@@ -56,9 +57,7 @@ const Home = () => {
     // Folder's Chats
     const [openFolders, setOpenFolders] = useState({});
 
-    // MainArea 
-    const refMainarea = useRef(null);
-
+    // Current chat and its messages
     const [currentChat, setCurrentChat] = useState("");
     const [messages, setMessages] = useState([]);
 
@@ -77,77 +76,21 @@ const Home = () => {
     // Sidebar Toggle
     const LeftSideToggle = () => {
         if (!leftSideToggleClicked) {
-
             setLeftSideToggleClicked(true);
 
             setToggleSidebar(!toggleSidebar);
 
-            // Sidebar width change
-            refSidebar.current.style.width = "301px";
-
-            // OnClick change image to logo
             setSidebarHover(false);
-
-            // Opacity cal of New Chat container
-            const newChatOpacity = window.getComputedStyle(refNewChat.current).opacity;
-
-            // New Chat opacity change setup
-            if (newChatOpacity < 0.5) {
-                refNewChat.current.style.opacity = 1;
-
-                refFolderChat.current.style.opacity = 1;
-
-                refChats.current.style.opacity = 1;
-            }
-            else {
-                refNewChat.current.style.opacity = 0;
-
-                refFolderChat.current.style.opacity = 0;
-
-                refChats.current.style.opacity = 0;
-            }
-
-            // Mainarea width change
-            refMainarea.current.style.marginLeft = "302px";
-
-            //refInputArea.currrent.style.marginLeft = "300px"
         }
-
     };
 
     const RightSideToggle = () => {
         setToggleSidebar(!toggleSidebar);
 
-        // Sidebar width change
-        refSidebar.current.style.width = "58px";
-
         // OnClick change image to logo
         refLogo.current.style.width = "40px";
         refLogo.current.style.height = "40px";
         refLogo.current.src = "/logo-nobg.png";
-
-        // Opacity cal of New Chat container
-        const newChatOpacity = window.getComputedStyle(refNewChat.current).opacity;
-
-        // New Chat opacity change setup
-        if (newChatOpacity < 0.5) {
-            refNewChat.current.style.opacity = 1;
-
-            refFolderChat.current.style.opacity = 1;
-
-            refChats.current.style.opacity = 1;
-        }
-        else {
-            refNewChat.current.style.opacity = 0;
-
-            refFolderChat.current.style.opacity = 0;
-
-            refChats.current.style.opacity = 0;
-        }
-
-        // Mainarea width change
-        refMainarea.current.style.marginLeft = "59px";
-        //refInputArea.current.style.marginLeft = "90px";
 
         setLeftSideToggleClicked(false);
 
@@ -279,7 +222,7 @@ const Home = () => {
 
             // Show folders - make enough Space
             if (showFolders) {
-                
+
                 let fullHeightFolders = ((fCount * 40) + ((fCount - 1) * 4));
 
                 // Add height for chats of already opened folders
@@ -289,7 +232,7 @@ const Home = () => {
                     }
                 });
 
-                if (fCount == 0){
+                if (fCount == 0) {
                     fullHeightFolders = 40;
                 }
                 setFoldersWindowHeight(`${fullHeightFolders}px`);
@@ -434,7 +377,7 @@ const Home = () => {
             const pastMessages = await api.post("/user/getChat", { chatId }, { withCredentials: true });
             setMessages(pastMessages.data.messages);
 
-            //console.log(pastMessages.data.messages);
+            console.log(pastMessages.data.messages);
 
         } catch (error) {
             console.error("Error getting Chat messages:", error.response?.data || error.message);
@@ -585,7 +528,7 @@ const Home = () => {
 
                 {/* Sidebar */}
                 <div className="fixed flex top-0 left-0 border-r border-r-[#151515] overflow-visible z-1">
-                    <div className="flex flex-col h-screen w-[58px] items-center py-1 gap-3 bg-[#070707] text-white overflow-visible whitespace-nowrap transition-[width] duration-300 ease-in-out"
+                    <div className={`flex flex-col h-screen items-center py-1 gap-3 bg-[#070707] ${!toggleSidebar ? "w-[58px]" : "w-[301px]"} text-white overflow-visible whitespace-nowrap transition-all duration-300 ease-in-out`}
                         ref={refSidebar}
                         onMouseEnter={handleMouseEnter}
                         onMouseLeave={handleMouseLeave}
@@ -621,12 +564,12 @@ const Home = () => {
                                     <div className="flex items-center flex-shrink-0">
                                         <img src="https://img.icons8.com/?size=100&id=zqRKVWtC1VeY&format=png&color=ffffff" alt="Logo" className="rounded-full w-[24px] h-auto" />
                                     </div>
-                                    <div className="opacity-0 transition-all duration-300 ease-in-out" ref={refNewChat}>New Chat</div>
+                                    <div className={`transition-all duration-200 ease-in-out ${!toggleSidebar ? "opacity-0" : "opacity-100"}`}>New Chat</div>
                                 </div>
                             </div>
 
                             {/* Sidebar Main Content (Search, Folder, Folders List, Chat) */}
-                            <div className="opacity-0 transition-all duration-300 ease-in-out overflow-visible whitespace-nowrap" ref={refFolderChat}>
+                            <div className={`transition-all duration-200 ease-in-out overflow-visible whitespace-nowrap ${!toggleSidebar ? "opacity-0" : "opacity-100"}`}>
 
                                 {/* Search Bar */}
                                 <div className="flex item-center w-full rounded-lg bg-[#272727] p-2">
@@ -634,7 +577,7 @@ const Home = () => {
                                 </div>
 
                                 {/* Folder */}
-                                <div className="flex item-center justify-between w-full rounded-xl bg-[#070707] py-2 text-sm mt-[10px]">
+                                <div className={`flex item-center justify-between w-full rounded-xl bg-[#070707] py-2 text-sm mt-[10px]`}>
                                     <div>Folders</div>
                                     <div className="flex item-center justify-center gap-1">
                                         <button className="h-[20px] rounded-md bg-[#272727] px-1 flex-shrink-0" onClick={CreateFolderPopup}>
@@ -766,9 +709,9 @@ const Home = () => {
                             </div>
 
                             {/* Chats List */}
-                            <div className={`overflow-visible transition-all duration-300 ease-in-out ${showChats ? "opacity-100" : "opacity-0"}`} style={{ height: chatsWindowHeight }}>
+                            <div className={`overflow-visible transition-all duration-200 ease-in-out ${showChats ? "opacity-100" : "opacity-0"}`} style={{ height: chatsWindowHeight }}>
 
-                                <div className="flex flex-col gap-1 item-center w-full opacity-0 transition-all duration-300 ease-in-out overflow-visible whitespace-nowrap" ref={refChats}>
+                                <div className={`flex flex-col gap-1 item-center w-full transition-all duration-300 ease-in-out overflow-visible whitespace-nowrap ${!toggleSidebar ? "opacity-0" : "opacity-100"}`}>
                                     {chats.map((chat) => (
                                         <div className="flex flex-col item-center justify-between w-full rounded-lg bg-[#272727] gap-1 overflow-visible group/chat" key={chat._id} onClick={() => OpenChat(chat._id)}>
                                             <div className="flex justify-between gap-2 overflow-visible">
@@ -813,7 +756,7 @@ const Home = () => {
 
                             </div>
 
-                            {/* <div className="flex items-center">
+                            {/* <div className="flex items-center"
                                     <img src="https://img.icons8.com/?size=100&id=87085&format=png&color=ffffff" alt="chat" className="w-[20px] h-auto" />
                                 </div> */}
 
@@ -821,7 +764,7 @@ const Home = () => {
                             <div className="h-1 w-full"></div>
 
                             {/* User Info Part */}
-                            <div className={`absolute left-0 bottom-0 flex items-center w-full py-1 pl-[4px] border-t-1 border-[#272727] gap-2 bg-[#070707] transition-all duration-300 ease-in-out overflow-hidden whitespace-nowrap ${toggleSidebar ? "w-[268px]" : "w-[58px]"}`}>
+                            <div className={`absolute left-0 bottom-0 flex items-center w-full py-1 pl-[4px] border-t-1 border-[#272727] gap-2 bg-[#070707] transition-all duration-200 ease-in-out overflow-hidden whitespace-nowrap ${toggleSidebar ? "w-[268px]" : "w-[58px]"}`}>
 
                                 <div className="flex items-center justify-center h-[35px] w-[35px]  rounded-full m-2 bg-[#323232] flex-shrink-0" onClick={handleLogOut}>
                                     <img src="https://img.icons8.com/?size=100&id=98957&format=png&color=ffffff" alt="Profile" className="h-[25px] w-[25px]" />
@@ -841,7 +784,7 @@ const Home = () => {
                 </div>
 
                 {/* Mainarea */}
-                <div className="relative flex flex-col items-center justify-center min-h-screen flex-1 ml-[59px] bg-black transition-[margin-left] duration-300 ease-in-out" ref={refMainarea}>
+                <div className={`relative flex flex-1 flex-col items-center justify-center min-h-screen  bg-black ${!toggleSidebar ? "ml-[58px]" : "ml-[301px]"} transition-all duration-300 ease-in-out`}>
 
                     {/* TitleBar [#161616] */}
                     <div className="sticky top-0 flex w-full justify-between text-white pt-4 pr-8 pb-4 bg-[#030303] border-b border-b-[#151515]" ref={titleBarRef}>
@@ -855,14 +798,77 @@ const Home = () => {
                         </div>
 
                         <div className="flex items-center gap-3">
-                            <button className="h-[20px]">
-                                <img src="https://img.icons8.com/?size=100&id=bc20TOtEmtiP&format=png&color=000000" alt="expand-folders" className="invert w-[20px] h-auto" />
+                            <button className="relative h-[20px]">
+                                <img src="https://img.icons8.com/?size=100&id=bc20TOtEmtiP&format=png&color=000000" alt="Saved prompts" className="invert w-[20px] h-auto" onClick={() => setShowSavedPrompts(!showSavedPrompts)} />
+                                {showSavedPrompts && (
+                                    <div className="absolute right-0 top-[calc(100%+4px)] flex flex-col min-w-40 max-w-60 gap-1 text-left rounded-lg bg-[#141414] border-2 border-[#212121] drop-shadow">
+                                        {/* Header */}
+                                        <div className="font-bold mt-2 ml-2">Saved Prompts</div>
+                                        <div className="w-full h-[1px] bg-gray-300"></div>
+
+                                        {/* Prompt list */}
+                                        <div className="flex flex-col flex-1 divide-y divide-[#212121] min-w-0">
+                                            {/* Row 1 */}
+                                            <div className="flex items-center justify-between gap-2 px-2 py-1 hover:bg-[#191919]">
+                                                <div className="flex items-center gap-2 min-w-0">
+                                                    <img src="https://img.icons8.com/?size=100&id=104&format=png&color=ffffff" alt="Star" className="shrink-0 w-3 h-3" />
+                                                    <div className="flex-1 min-w-0 overflow-hidden whitespace-nowrap truncate">Gsgs</div>
+                                                </div>
+                                                <div className="flex items-center gap-1 shrink-0">
+                                                    <img src="https://img.icons8.com/?size=100&id=pNYOTp5DinZ3&format=png&color=ffffff" alt="Copy" className="shrink-0 w-4 h-4" />
+                                                    <img src="https://img.icons8.com/?size=100&id=14237&format=png&color=ffffff" alt="Delete" className="shrink-0 w-4 h-4" />
+                                                </div>
+                                            </div>
+
+                                            {/* Row 2 (note: removed outer flex-1) */}
+                                            <div className="flex items-center justify-between gap-2 px-2 py-1 hover:bg-[#191919]">
+                                                <div className="flex items-center gap-2 min-w-0">
+                                                    <img src="https://img.icons8.com/?size=100&id=104&format=png&color=ffffff" alt="Star" className="shrink-0 w-3 h-3" />
+                                                    <div className="flex-1 min-w-0 overflow-hidden whitespace-nowrap truncate">Fgs kgs stie ba ib aiwb ia</div>
+                                                </div>
+                                                <div className="flex items-center gap-1 shrink-0">
+                                                    <img src="https://img.icons8.com/?size=100&id=pNYOTp5DinZ3&format=png&color=ffffff" alt="Copy" className="shrink-0 w-4 h-4" />
+                                                    <img src="https://img.icons8.com/?size=100&id=14237&format=png&color=ffffff" alt="Delete" className="shrink-0 w-4 h-4" />
+                                                </div>
+                                            </div>
+
+                                            {/* Row 3 */}
+                                            <div className="flex items-center justify-between gap-2 px-2 py-1 hover:bg-[#191919]">
+                                                <div className="flex items-center gap-2 min-w-0">
+                                                    <img src="https://img.icons8.com/?size=100&id=104&format=png&color=ffffff" alt="Star" className="shrink-0 w-3 h-3" />
+                                                    <div className="flex-1 min-w-0 overflow-hidden whitespace-nowrap truncate">Ygd eggssw dhsbsa 5yn</div>
+                                                </div>
+                                                <div className="flex items-center gap-1 shrink-0">
+                                                    <img src="https://img.icons8.com/?size=100&id=pNYOTp5DinZ3&format=png&color=ffffff" alt="Copy" className="shrink-0 w-4 h-4" />
+                                                    <img src="https://img.icons8.com/?size=100&id=14237&format=png&color=ffffff" alt="Delete" className="shrink-0 w-4 h-4" />
+                                                </div>
+                                            </div>
+
+                                            {/* Row 4 */}
+                                            <div className="flex items-center justify-between gap-2 px-2 py-1 hover:bg-[#191919]">
+                                                <div className="flex items-center gap-2 min-w-0">
+                                                    <img src="https://img.icons8.com/?size=100&id=104&format=png&color=ffffff" alt="Star" className="shrink-0 w-3 h-3" />
+                                                    <div className="flex-1 min-w-0 overflow-hidden whitespace-nowrap truncate">Hgsg wearV</div>
+                                                </div>
+                                                <div className="flex items-center gap-1 shrink-0">
+                                                    <img src="https://img.icons8.com/?size=100&id=pNYOTp5DinZ3&format=png&color=ffffff" alt="Copy" className="shrink-0 w-4 h-4" />
+                                                    <img src="https://img.icons8.com/?size=100&id=14237&format=png&color=ffffff" alt="Delete" className="shrink-0 w-4 h-4" />
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Footer */}
+                                        <div className="w-full h-[1px] bg-gray-300"></div>
+                                        <div className="ml-2 mr-2 mb-2 text-sm text-center">Manage all</div>
+                                    </div>
+                                )}
                             </button>
 
                             <button className="h-[20px]">
-                                <img src="https://img.icons8.com/?size=100&id=g1EQCit0RQ7Z&format=png&color=1A1A1A" alt="expand-folders" className="invert w-[18px] h-auto" />
+                                <img src="https://img.icons8.com/?size=100&id=g1EQCit0RQ7Z&format=png&color=1A1A1A" alt="Share Chat" className="invert w-[18px] h-auto" />
                             </button>
                         </div>
+
                     </div>
 
                     {/* Content */}

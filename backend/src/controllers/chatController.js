@@ -78,8 +78,11 @@ const getRedisContext = async (chatId) => {
 };
 
 const generateEmbedding = async (text) => {
+
+  const payload = { text: typeof text === "string" ? text : JSON.stringify(text) };
+
   try {
-    const res = await axios.post("http://127.0.0.1:8000/embed", { text });
+    const res = await axios.post("http://127.0.0.1:8000/embed", payload );
     return res.data.embedding;
   } catch (err) {
     console.error("Error generating embedding:", err);
@@ -141,21 +144,13 @@ const chat = async (req, res) => {
     // Construct LLM input (Redis context + top semantic matches)
     const llmContext = [
       // System-level instruction to the model
-      `Whenever the user requests a quiz, return the quiz in JSON format with both questions and answers, each question with 4 options and correct option(full content not number) as answer. 
-      Format example:
-      [
-        { "question": "What is 2+2?", "options": ["3","4","5", "6"], "answer": "4" },
-        { "question": "Capital of France?", "options": ["Paris","Berlin","London","Madrid"], "answer": "Paris" }
-      ]
-      Only use this format for quizzes. For other messages, reply normally.`,
-
       ...contextMessages.map(m => `${m.sender}: ${m.text}`),
       ...semanticMatches.map(m => `history: ${m.text}`)
     ].join("\n");
 
-    // Send prompt + context to FastAPI → LLaMA3
+    // Send prompt + context to FastAPI → LLaMA3 - (llama3:latest)
     const apiRes = await axios.post("http://127.0.0.1:8000/chat", {
-      model: "llama3:latest",
+      model: "llama-3.1-8b-instant",
       message: llmContext
     });
 
@@ -164,10 +159,17 @@ const chat = async (req, res) => {
     // Save bot response (with embedding)
     const botEmbedding = await generateEmbedding(llmResponse);
 
+    let llmText;
+    if (Array.isArray(llmResponse) || typeof llmResponse === "object") {
+      llmText = JSON.stringify(llmResponse);
+    } else {
+      llmText = llmResponse;
+    }
+
     const botMessage = new Message({
       chatId: currentChat,
       sender: "bot",
-      text: llmResponse,
+      text: llmText,
       embedding: botEmbedding
     });
     await botMessage.save();
@@ -190,21 +192,9 @@ const feedback = async (req, res) => {
 
     let { currentChat, prompt } = req.body;
 
-    const systemPrompt = `
-      SYSTEM: You are a quiz explanation assistant. 
-      Your task: explain why the user's answer is wrong, 
-      or just correct them if it's factual. 
-      And do no state that user's answer is incorrect or wrong as user's asking you because its incorrect 
-      Never add extra chatty phrases or unrelated suggestions. 
-      Respond concisely.
-    `;
-
-    const llmInput = `${systemPrompt}\n\nUSER_PROMPT: ${prompt}`;
-
-    // Send prompt + context to FastAPI → LLaMA3
-    const apiRes = await axios.post("http://127.0.0.1:8000/chat", {
-      model: "llama3:latest",
-      message: llmInput
+    const apiRes = await axios.post("http://127.0.0.1:8000/feedback", {
+      model: "llama-3.1-8b-instant",
+      message: prompt
     });
 
     const llmResponse = formatResponse(apiRes.data);
