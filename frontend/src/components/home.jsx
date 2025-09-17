@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import axios from "axios";
 
 import api from "../api/axios";
-import { useAuth } from "../context/AuthContext";
+import { useAuth, authStore } from "../context/AuthContext";
 import { config } from "../config";
 
 import Message from "./message"
@@ -122,23 +122,22 @@ const Home = () => {
         const fetchInfo = async () => {
             // Get User Info
             try {
-                const res = await api.get("/user/me");
-                return setUsername(res.data.username);
+                const refRes = await axios.post(`${config.BACKEND_URL}/api/auth/refresh`, {}, { withCredentials: true });
+
+                authStore.updateAccessToken(refRes.data.accessToken);
+                authStore.setUser(refRes.data.user);
+
+                setUsername(refRes.data.user.username);
+
+                LoadFolders();
+                LoadChats();
+
             } catch (error) {
-                console.error("Error fetching info:", error.response?.data || error.message);
-                return null;
+                console.error("Error fetching user info:", error.response?.data || error.message);
             }
         };
 
         fetchInfo();
-
-        //console.log("banda to hai");
-
-        if (user) {
-
-            LoadFolders();
-            LoadChats();
-        }
 
     }, [user]);
 
