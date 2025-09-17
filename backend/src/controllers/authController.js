@@ -185,6 +185,8 @@ const refresh = async (req, res) => {
     try {
         const refreshToken = req.cookies.refreshToken;
 
+        console.log("Refresh token: ", refreshToken);
+        
         if (!refreshToken) return res.json({ message: "No refresh token" });
 
         jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET, async (err, decoded) => {
