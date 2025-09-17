@@ -4,6 +4,7 @@ import axios from "axios";
 
 import api from "../api/axios";
 import { useAuth } from "../context/AuthContext";
+import { config } from "../config";
 
 import Message from "./message"
 
@@ -450,7 +451,7 @@ const Home = () => {
 
             // Temp chat prompt
             try {
-                const promptRes = await axios.post("http://localhost:5000/api/temp/chat", { prompt });
+                const promptRes = await axios.post(`${config.BACKEND_URL}/api/temp/chat`, { prompt });
                 const resData = promptRes.data.llmResponse
 
                 console.log(resData);
@@ -509,7 +510,7 @@ const Home = () => {
     const handleLogOut = async () => {
 
         if (user) {
-            await axios.post("http://localhost:5000/api/auth/logout", {}, { headers: { Authorization: `Bearer ${accessToken}` }, withCredentials: true });
+            await axios.post(`${config.BACKEND_URL}/api/auth/logout`, {}, { headers: { Authorization: `Bearer ${accessToken}` }, withCredentials: true });
 
             setAccessToken(null);
             setUser(null);

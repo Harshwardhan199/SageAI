@@ -3,6 +3,7 @@ import axios from "axios";
 import { useNavigate } from "react-router-dom";
 
 import { useAuth } from "../context/AuthContext";
+import { config } from "../config";
 
 export default function LoginSignup() {
   const navigate = useNavigate();
@@ -18,7 +19,7 @@ export default function LoginSignup() {
     const data = Object.fromEntries(formData.entries());
 
     try {
-      const res = await axios.post("http://localhost:5000/api/auth/signup", data);
+      const res = await axios.post(`${config.BACKEND_URL}/api/auth/signup`, data);
 
       setAccessToken(res.data.accessToken);
       setUser(res.data.user);
@@ -38,7 +39,7 @@ export default function LoginSignup() {
     const data = Object.fromEntries(formData.entries());
 
     try {
-      const res = await axios.post("http://localhost:5000/api/auth/login", data, { withCredentials: true });
+      const res = await axios.post(`${config.BACKEND_URL}/api/auth/login`, data, { withCredentials: true });
 
       setAccessToken(res.data.accessToken);
       setUser(res.data.user);
@@ -67,7 +68,7 @@ export default function LoginSignup() {
         try {
           const { code } = response;
 
-          const res = await axios.post("http://localhost:5000/api/auth/google", { code }, { withCredentials: true });
+          const res = await axios.post(`${config.BACKEND_URL}/api/auth/google`, { code }, { withCredentials: true });
 
           updateAccessToken(res.data.accessToken);
           

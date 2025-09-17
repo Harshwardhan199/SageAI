@@ -4,27 +4,31 @@ from fastapi.responses import PlainTextResponse
 from pydantic import BaseModel
 import requests
 
+import numpy as np
+
+import os
 from dotenv import load_dotenv
 
-#from sentence_transformers import SentenceTransformer
 from groq import Groq
-from google import genai
 
 load_dotenv()
 
 app = FastAPI()
 
+# Text Generation
 class ChatRequest(BaseModel):
     model: str
     message: str
 
 groqClient = Groq(api_key=os.getenv("GROQ_API_KEY"))
 
+# Embeddings
 class EmbedRequest(BaseModel):
     text: str
 
-geminiClient = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
-#embedding_model = SentenceTransformer('all-MiniLM-L6-v2') 
+API_URL = "https://api-atlas.nomic.ai/v1/embedding/text"
+
+NOMIC_API_KEY = api_key=os.getenv("NOMIC_API_KEY")
 
 @app.post("/chat", response_class=PlainTextResponse)
 def chat(payload: ChatRequest):
@@ -76,14 +80,20 @@ def chat(payload: ChatRequest):
 
 @app.post("/embed")
 async def get_embedding(req: EmbedRequest):
-    """
-    Generate embedding for a given text.
-    """
-    result = geminiClient.models.embed_content(
-        model = "gemini-embedding-001",
-        contents = req.text
-    )
+    headers = {
+        "Authorization": f"Bearer {NOMIC_API_KEY}",
+        "Content-Type": "application/json"
+    }
 
-    #embedding = embedding_model.encode(req.text).tolist()  
-    #print(embedding)
-    return {"embedding": embedding}
+    payload = {
+        "texts": [req.text],
+        "model": "nomic-embed-text-v1.5",
+        "task_type": "search_document"
+    }
+
+    response = requests.post(API_URL, json=payload, headers=headers)
+
+    data = response.json()
+    embeddings = np.array(data["embeddings"])
+
+    return {"embedding": embeddings[0].tolist()}
