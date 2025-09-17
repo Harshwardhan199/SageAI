@@ -76,7 +76,7 @@ const Message = forwardRef(({ sender, text, style }, ref) => {
   };
 
   const blocks = parseBlocks(text);
-  console.log("blocks: ", blocks);
+  //console.log("blocks: ", blocks);
 
   return (
     <div
