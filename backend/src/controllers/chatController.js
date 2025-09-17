@@ -1,3 +1,4 @@
+require("dotenv").config();
 const axios = require("axios")
 
 const User = require("../models/User");
@@ -5,6 +6,8 @@ const Chat = require("../models/Chat");
 const Message = require("../models/Messasge");
 
 const { getRedis } = require("../db");
+
+const LLM_API_URL = process.env.LLM_API_URL;
 
 // Response formatter
 function formatResponse(raw) {
@@ -149,7 +152,7 @@ const chat = async (req, res) => {
     ].join("\n");
 
     // Send prompt + context to FastAPI → LLaMA3 - (llama3:latest)
-    const apiRes = await axios.post("http://127.0.0.1:8000/chat", {
+    const apiRes = await axios.post(`${LLM_API_URL}/chat`, {
       model: "llama-3.1-8b-instant",
       message: llmContext
     });
@@ -192,7 +195,7 @@ const feedback = async (req, res) => {
 
     let { currentChat, prompt } = req.body;
 
-    const apiRes = await axios.post("http://127.0.0.1:8000/feedback", {
+    const apiRes = await axios.post(`${LLM_API_URL}/feedback`, {
       model: "llama-3.1-8b-instant",
       message: prompt
     });
