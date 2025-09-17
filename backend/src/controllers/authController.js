@@ -32,8 +32,8 @@ const signup = async (req, res) => {
         //Save RefreshToken in HttpOnly cookie
         res.cookie("refreshToken", refreshToken, {
             httpOnly: true,
-            secure: false,
-            sameSite: "Lax",
+            secure: true,
+            sameSite: "None",
             maxAge: 7 * 24 * 60 * 60 * 1000
         });
 
@@ -77,8 +77,8 @@ const login = async (req, res) => {
         //Save RefreshToken in HttpOnly cookie
         res.cookie("refreshToken", refreshToken, {
             httpOnly: true,
-            secure: false,
-            sameSite: "Lax",
+            secure: true,
+            sameSite: "None",
             maxAge: 7 * 24 * 60 * 60 * 1000
         });
 
@@ -152,8 +152,8 @@ const googleSignIn = async (req, res) => {
         //Save RefreshToken in HttpOnly cookie
         res.cookie("refreshToken", refreshToken, {
             httpOnly: true,
-            secure: false,
-            sameSite: "Lax",
+            secure: true,
+            sameSite: "None",
             maxAge: 7 * 24 * 60 * 60 * 1000
         });
 
@@ -203,8 +203,8 @@ const refresh = async (req, res) => {
 
             res.cookie("refreshToken", refreshToken, {
                 httpOnly: true,
-                secure: false,
-                sameSite: "Lax",
+                secure: true,
+                sameSite: "None",
                 maxAge: 7 * 24 * 60 * 60 * 1000
             });
 
@@ -247,8 +247,8 @@ const logout = async (req, res) => {
 
         res.clearCookie("refreshToken", {
             httpOnly: true,
-            secure: false,
-            sameSite: "Lax"
+            secure: true,
+            sameSite: "None"
         });
 
         res.json({ message: "Logged out successfully" });
