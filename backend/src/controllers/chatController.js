@@ -85,7 +85,7 @@ const generateEmbedding = async (text) => {
   const payload = { text: typeof text === "string" ? text : JSON.stringify(text) };
 
   try {
-    const res = await axios.post("http://127.0.0.1:8000/embed", payload );
+    const res = await axios.post(`${LLM_API_URL}/embed`, payload );
     return res.data.embedding;
   } catch (err) {
     console.error("Error generating embedding:", err);
