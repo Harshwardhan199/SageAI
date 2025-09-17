@@ -122,7 +122,11 @@ const Home = () => {
         const fetchInfo = async () => {
             // Get User Info
             try {
+                console.log("Trying to get user info");
+                
                 const refRes = await axios.post(`${config.BACKEND_URL}/api/auth/refresh`, {}, { withCredentials: true });
+
+                console.log("Got user info");
 
                 authStore.updateAccessToken(refRes.data.accessToken);
                 authStore.setUser(refRes.data.user);
