@@ -408,6 +408,11 @@ const Home = () => {
         }
     };
 
+    //Load saved prompts
+    const LoadSavedPrompts = async() =>{
+
+    }
+
     // New Chat 
     const handleNewChat = async () => {
         setCurrentChat("");
@@ -1006,6 +1011,7 @@ const Home = () => {
                                         text={msg.text}
                                         style={{ minHeight: idx === lastBotIndex ? `${responseHeight}px` : "auto", }}
                                         ref={idx === lastUserIndex ? latestUserRef : idx === lastBotIndex ? latestBotRef : null}
+                                        loadSavedPrompts={LoadSavedPrompts}
                                     />
                                 ))}
 

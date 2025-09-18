@@ -214,4 +214,12 @@ const getChat = async (req, res) => {
   }
 };
 
-module.exports = { getCurrentUser, createFolder, deleteFolder, getUserFolders, getChat, moveChat, deleteChat, getUngroupedChats }; 
+const savePrompt = async(req, res) =>{
+
+}
+
+const getPrompt = async(req, res) =>{
+
+}
+
+module.exports = { getCurrentUser, createFolder, deleteFolder, getUserFolders, getChat, moveChat, deleteChat, getUngroupedChats, savePrompt, getPrompt }; 
