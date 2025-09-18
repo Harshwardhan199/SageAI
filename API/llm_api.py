@@ -30,6 +30,10 @@ API_URL = "https://api-atlas.nomic.ai/v1/embedding/text"
 
 NOMIC_API_KEY = os.getenv("NOMIC_API_KEY")
 
+@app.get("/")
+def root():
+    return {"status": "ok", "message": "LLM API is running"}
+
 @app.post("/chat", response_class=PlainTextResponse)
 def chat(payload: ChatRequest):
     try:
