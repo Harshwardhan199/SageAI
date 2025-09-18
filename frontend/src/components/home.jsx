@@ -1,6 +1,7 @@
 import { useLayoutEffect, useRef, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
+import { toast } from "react-toastify";
 
 import api from "../api/axios";
 import { useAuth, authStore } from "../context/AuthContext";
@@ -436,7 +437,7 @@ const Home = () => {
                     const promptRes = await api.post("/user/chat", { prompt }, { withCredentials: true });
                     const resData = promptRes.data.llmResponse
 
-                    console.log(resData);
+                    //console.log(resData);
 
                     //response
                     setMessages((prev) => prev.map((msg) => msg._id === botId ? { ...msg, text: resData } : msg));
@@ -476,7 +477,7 @@ const Home = () => {
                 const promptRes = await axios.post(`${config.BACKEND_URL}/api/temp/chat`, { prompt });
                 const resData = promptRes.data.llmResponse
 
-                console.log(resData);
+                //console.log(resData);
 
                 //response
                 setMessages((prev) => prev.map((msg) => msg._id === botId ? { ...msg, text: resData } : msg));
