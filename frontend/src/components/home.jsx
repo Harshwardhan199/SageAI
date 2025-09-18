@@ -122,7 +122,7 @@ const Home = () => {
 
         const fetchInfo = async () => {
             // Get User Info
-            try {                
+            try {
                 const res = await axios.get(`${config.BACKEND_URL}/api/user/me`, {
                     headers: { Authorization: `Bearer ${accessToken}` },
                 });
@@ -147,7 +147,7 @@ const Home = () => {
                     } catch (refreshError) {
                         //console.error("Error refreshing token:", refreshError.response?.data || refreshError.message);
                         toast.error("Session expired. Please log in again.");
-                        
+
                         authStore.updateAccessToken(null);
                         authStore.setUser(null);
                         setUsername(null);
@@ -418,7 +418,7 @@ const Home = () => {
     const handlePrompt = async () => {
 
         if (promptText == "") {
-            return null
+            return;
         }
 
         let prompt = promptText;
@@ -446,26 +446,24 @@ const Home = () => {
 
                 } catch (error) {
                     console.error("Error Sending Prompt:", error.response?.data || error.message);
-                    return null;
                 }
 
                 LoadChats();
-                return null
             }
+            else {
+                // Prompt on continued chat
+                try {
+                    const promptRes = await api.post("/user/chat", { prompt, currentChat }, { withCredentials: true });
+                    const resData = promptRes.data.llmResponse
 
-            // Prompt on continued chat
-            try {
-                const promptRes = await api.post("/user/chat", { prompt, currentChat }, { withCredentials: true });
-                const resData = promptRes.data.llmResponse
+                    console.log(resData);
 
-                console.log(resData);
+                    //response
+                    setMessages((prev) => prev.map((msg) => msg._id === botId ? { ...msg, text: resData } : msg));
 
-                //response
-                setMessages((prev) => prev.map((msg) => msg._id === botId ? { ...msg, text: resData } : msg));
-
-            } catch (error) {
-                console.error("Error Sending Prompt:", error.response?.data || error.message);
-                return null;
+                } catch (error) {
+                    console.error("Error Sending Prompt:", error.response?.data || error.message);
+                }
             }
         }
         else {
@@ -487,28 +485,23 @@ const Home = () => {
 
                 } catch (error) {
                     console.error("Error Sending Prompt:", error.response?.data || error.message);
-                    return null;
                 }
-
-                LoadChats();
-                return null
             }
+            else {
+                // Prompt on continued chat
+                try {
+                    const promptRes = await axios.post(`${config.BACKEND_URL}/api/temp/chat`, { prompt, currentChat });
+                    const resData = promptRes.data.llmResponse
 
-            // Prompt on continued chat
-            try {
-                const promptRes = await axios.post(`${config.BACKEND_URL}/api/temp/chat`, { prompt, currentChat });
-                const resData = promptRes.data.llmResponse
+                    console.log(resData);
 
-                console.log(resData);
+                    //response
+                    setMessages((prev) => prev.map((msg) => msg._id === botId ? { ...msg, text: resData } : msg));
 
-                //response
-                setMessages((prev) => prev.map((msg) => msg._id === botId ? { ...msg, text: resData } : msg));
-
-            } catch (error) {
-                console.error("Error Sending Prompt:", error.response?.data || error.message);
-                return null;
+                } catch (error) {
+                    console.error("Error Sending Prompt:", error.response?.data || error.message);
+                }
             }
-
         }
     };
 
