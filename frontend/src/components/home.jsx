@@ -472,9 +472,31 @@ const Home = () => {
             const botId = Date.now();
             setMessages((prev) => [...prev, { sender: "user", text: prompt }, { sender: "bot", text: "...", _id: botId },]);
 
-            // Temp chat prompt
+            // New chat prompt
+            if (!currentChat) {
+                try {
+                    const promptRes = await axios.post(`${config.BACKEND_URL}/api/temp/chat`, { prompt });
+                    const resData = promptRes.data.llmResponse
+
+                    //console.log(resData);
+
+                    //response
+                    setMessages((prev) => prev.map((msg) => msg._id === botId ? { ...msg, text: resData } : msg));
+
+                    setCurrentChat(promptRes.data.currentChat);
+
+                } catch (error) {
+                    console.error("Error Sending Prompt:", error.response?.data || error.message);
+                    return null;
+                }
+
+                LoadChats();
+                return null
+            }
+
+            // Prompt on continued chat
             try {
-                const promptRes = await axios.post(`${config.BACKEND_URL}/api/temp/chat`, { prompt });
+                const promptRes = await axios.post(`${config.BACKEND_URL}/api/temp/chat`, { prompt, currentChat });
                 const resData = promptRes.data.llmResponse
 
                 //console.log(resData);

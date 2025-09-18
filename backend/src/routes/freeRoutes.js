@@ -1,8 +1,8 @@
 const express = require("express");
 const router = express.Router();
 
-const { chat } = require("../controllers/freeController");
+const { tempChat } = require("../controllers/freeController");
 
-router.post("/chat", chat); 
+router.post("/chat", tempChat); 
 
 module.exports = router;
