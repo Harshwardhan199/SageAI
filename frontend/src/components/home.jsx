@@ -121,9 +121,7 @@ const Home = () => {
 
         const fetchInfo = async () => {
             // Get User Info
-            try {
-                console.log("Checking user's access token");
-                
+            try {                
                 const res = await axios.get(`${config.BACKEND_URL}/api/user/me`, {
                     headers: { Authorization: `Bearer ${accessToken}` },
                 });
