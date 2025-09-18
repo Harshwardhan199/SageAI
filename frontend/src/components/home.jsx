@@ -122,28 +122,45 @@ const Home = () => {
         const fetchInfo = async () => {
             // Get User Info
             try {
-                console.log("Trying to get user info");
-                
-                const refRes = await axios.post(`${config.BACKEND_URL}/api/auth/refresh`, {}, { withCredentials: true });
-
-                console.log("Got user info");
-
-                authStore.updateAccessToken(refRes.data.accessToken);
-                authStore.setUser(refRes.data.user);
-
-                setUsername(refRes.data.user.username);
+                const res = await axios.get(`${config.BACKEND_URL}/api/user/me`, {
+                    headers: { Authorization: `Bearer ${accessToken}` },
+                });
+                setUsername(res.data.username);
 
                 LoadFolders();
                 LoadChats();
 
             } catch (error) {
-                console.error("Error fetching user info:", error.response?.data || error.message);
+                if (error.response?.status === 401) {
+                    try {
+                        const refRes = await axios.post(`${config.BACKEND_URL}/api/auth/refresh`, {}, { withCredentials: true });
+
+                        authStore.updateAccessToken(refRes.data.accessToken);
+                        authStore.setUser(refRes.data.user.username);
+
+                        setUsername(refRes.data.user.username);
+
+                        LoadFolders();
+                        LoadChats();
+
+                    } catch (refreshError) {
+                        console.error("Error refreshing token:", refreshError.response?.data || refreshError.message);
+
+                        authStore.updateAccessToken(null);
+                        authStore.setUser(null);
+                        setUsername(null);
+
+                    }
+                } else {
+                    console.error("Error fetching user info:", error.response?.data || error.message);
+                }
             }
+
         };
 
         fetchInfo();
 
-    }, [user]);
+    }, []);
 
     // Close menu on outside click
     useEffect(() => {
