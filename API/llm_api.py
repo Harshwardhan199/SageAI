@@ -28,7 +28,7 @@ class EmbedRequest(BaseModel):
 
 API_URL = "https://api-atlas.nomic.ai/v1/embedding/text"
 
-NOMIC_API_KEY = api_key=os.getenv("NOMIC_API_KEY")
+NOMIC_API_KEY = os.getenv("NOMIC_API_KEY")
 
 @app.post("/chat", response_class=PlainTextResponse)
 def chat(payload: ChatRequest):
@@ -80,6 +80,7 @@ def chat(payload: ChatRequest):
 
 @app.post("/embed")
 async def get_embedding(req: EmbedRequest):
+    print("Request recieved")
     headers = {
         "Authorization": f"Bearer {NOMIC_API_KEY}",
         "Content-Type": "application/json"
