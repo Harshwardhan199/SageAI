@@ -569,7 +569,7 @@ const Home = () => {
                 <div className="fixed flex top-0 left-0 border-r border-r-[#151515] overflow-visible z-1">
                     <div className={`flex flex-col h-screen items-center py-1 gap-3 bg-[#070707] ${!toggleSidebar ? "w-[58px]" : "w-[301px]"} text-white overflow-visible whitespace-nowrap transition-all duration-300 ease-in-out`}
                         ref={refSidebar}
-                        onMouseEnter={handleMouseEnter}
+                        onMouseEnter={user ? handleMouseEnter : undefined}
                         onMouseLeave={handleMouseLeave}
                     >
 
@@ -586,7 +586,7 @@ const Home = () => {
                                     />
 
                                     <div className={`flex items-center absolute top-[-14px] transition-all duration-200 ease-in-out ${sidebarHover ? "opacity-100 scale-100" : "opacity-0 scale-90"}`}>
-                                        <img src="https://img.icons8.com/?size=100&id=xaWB0HfoyY9X&format=png&color=5A5A5A" alt="left sidebar" className="invert rounded-full w-[25px] h-[auto]" onClick={LeftSideToggle} />
+                                        <img src="https://img.icons8.com/?size=100&id=xaWB0HfoyY9X&format=png&color=5A5A5A" alt="left sidebar" className="invert rounded-full w-[25px] h-[auto]" onClick={user ? LeftSideToggle : undefined} />
                                     </div>
                                 </div>
 
