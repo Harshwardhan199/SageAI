@@ -9,7 +9,13 @@ import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
 
 import api from "../api/axios";
 
+import { useAuth } from "../context/AuthContext";
+import { config } from "../config";
+
 const Message = forwardRef(({ sender, text, style }, ref) => {
+
+  const { user } = useAuth();
+
   const isUser = sender === "user";
 
   const [quizStates, setQuizStates] = useState({});
@@ -132,7 +138,13 @@ const Message = forwardRef(({ sender, text, style }, ref) => {
                           Correct answer: ${quiz.answer}, 
                           User's Answer: ${state.selectedOption}`
 
-                        const promptRes = await api.post("/user/feedback", { prompt }, { withCredentials: true });
+                        let promptRes;
+                        if (user){
+                          promptRes = await api.post("/user/feedback", { prompt }, { withCredentials: true });
+                        }
+                        else{
+                          promptRes = await axios.post(`${config.BACKEND_URL}/api/temp/feedback`, {prompt});
+                        }
                         const resData = promptRes.data.llmResponse || "";
 
                         explaination = resData;

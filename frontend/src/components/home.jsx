@@ -478,7 +478,7 @@ const Home = () => {
                     const promptRes = await axios.post(`${config.BACKEND_URL}/api/temp/chat`, { prompt });
                     const resData = promptRes.data.llmResponse
 
-                    //console.log(resData);
+                    console.log(resData);
 
                     //response
                     setMessages((prev) => prev.map((msg) => msg._id === botId ? { ...msg, text: resData } : msg));
@@ -499,7 +499,7 @@ const Home = () => {
                 const promptRes = await axios.post(`${config.BACKEND_URL}/api/temp/chat`, { prompt, currentChat });
                 const resData = promptRes.data.llmResponse
 
-                //console.log(resData);
+                console.log(resData);
 
                 //response
                 setMessages((prev) => prev.map((msg) => msg._id === botId ? { ...msg, text: resData } : msg));

@@ -124,4 +124,22 @@ const tempChat = async (req, res) => {
   }
 };
 
-module.exports = { tempChat };
+const tempFeedback = async (req, res) => {
+  try {
+    let { currentChat, prompt } = req.body;
+
+    const apiRes = await axios.post(`${LLM_API_URL}/feedback`, {
+      model: "llama-3.1-8b-instant",
+      message: prompt
+    });
+
+    const llmResponse = formatResponse(apiRes.data);
+
+    return res.json({ message: "Response generated", currentChat, llmResponse });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Server error" });
+  }
+};
+
+module.exports = { tempChat, tempFeedback};
