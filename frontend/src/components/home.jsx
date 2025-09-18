@@ -144,15 +144,17 @@ const Home = () => {
                         LoadChats();
 
                     } catch (refreshError) {
-                        console.error("Error refreshing token:", refreshError.response?.data || refreshError.message);
-
+                        //console.error("Error refreshing token:", refreshError.response?.data || refreshError.message);
+                        toast.error("Session expired. Please log in again.");
+                        
                         authStore.updateAccessToken(null);
                         authStore.setUser(null);
                         setUsername(null);
 
                     }
                 } else {
-                    console.error("Error fetching user info:", error.response?.data || error.message);
+                    //console.error("Error fetching user info:", error.response?.data || error.message);
+                    toast.error("Failed to load user data. Please refresh the page.");
                 }
             }
 
