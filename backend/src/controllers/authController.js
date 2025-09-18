@@ -184,8 +184,6 @@ const currentUser = async (req, res) => {
 const refresh = async (req, res) => {    
     try {
         const refreshToken = req.cookies.refreshToken;
-
-        console.log("Refresh token: ", refreshToken);
         
         if (!refreshToken) return res.status(401).json({ message: "No refresh token" });
 

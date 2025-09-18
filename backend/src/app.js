@@ -8,8 +8,6 @@ const tempRoutes = require("./routes/freeRoutes");
 
 const app = express();
 
-console.log("Client_URL: ", process.env.CLIENT_URL);
-
 app.use(cors({
   origin: [process.env.CLIENT_URL, "http://localhost:5173"],
   credentials: true,

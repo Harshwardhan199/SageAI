@@ -135,11 +135,7 @@ const Home = () => {
             } catch (error) {
                 if (error.response?.status === 401) {
                     try {
-                        console.log("Checking refresh token");
-
                         const refRes = await axios.post(`${config.BACKEND_URL}/api/auth/refresh`, {}, { withCredentials: true });
-
-                        console.log("Refresh token found");
 
                         authStore.updateAccessToken(refRes.data.accessToken);
                         authStore.setUser(refRes.data.user.username);
