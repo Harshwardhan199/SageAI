@@ -122,7 +122,7 @@ const Home = () => {
         const fetchInfo = async () => {
             // Get User Info
             try {                
-                const res = await axios.get(`${config.BACKEND_URL}/api/user/me`, {
+                const res = await axios.get(`/api/user/me`, {
                     headers: { Authorization: `Bearer ${accessToken}` },
                 });
                 setUsername(res.data.username);
@@ -133,7 +133,7 @@ const Home = () => {
             } catch (error) {
                 if (error.response?.status === 401) {
                     try {
-                        const refRes = await axios.post(`${config.BACKEND_URL}/api/auth/refresh`, {}, { withCredentials: true });
+                        const refRes = await axios.post(`/api/auth/refresh`, {}, { withCredentials: true });
 
                         authStore.updateAccessToken(refRes.data.accessToken);
                         authStore.setUser(refRes.data.user.username);
@@ -146,7 +146,7 @@ const Home = () => {
                     } catch (refreshError) {
                         //console.error("Error refreshing token:", refreshError.response?.data || refreshError.message);
                         toast.error("Session expired. Please log in again.");
-                        
+
                         authStore.updateAccessToken(null);
                         authStore.setUser(null);
                         setUsername(null);
@@ -473,7 +473,7 @@ const Home = () => {
 
             // Temp chat prompt
             try {
-                const promptRes = await axios.post(`${config.BACKEND_URL}/api/temp/chat`, { prompt });
+                const promptRes = await axios.post(`/api/temp/chat`, { prompt });
                 const resData = promptRes.data.llmResponse
 
                 console.log(resData);
@@ -532,7 +532,7 @@ const Home = () => {
     const handleLogOut = async () => {
 
         if (user) {
-            await axios.post(`${config.BACKEND_URL}/api/auth/logout`, {}, { headers: { Authorization: `Bearer ${accessToken}` }, withCredentials: true });
+            await axios.post(`$/api/auth/logout`, {}, { headers: { Authorization: `Bearer ${accessToken}` }, withCredentials: true });
 
             setAccessToken(null);
             setUser(null);
