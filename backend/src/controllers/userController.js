@@ -2,6 +2,7 @@ const User = require("../models/User");
 const Folder = require("../models/Folder");
 const Chat = require("../models/Chat");
 const Message = require("../models/Messasge");
+const Prompt = require("../models/Prompt");
 
 const { getRedis } = require("../db");
 
@@ -175,7 +176,7 @@ const deleteChat = async (req, res) => {
     const redis = getRedis();
     await redis.del(`chat_context:${chat._id}`);
 
-    res.json({ message: "Chat Deleted  Successfully", chat });
+    res.json({ message: "Chat Deleted  Successfully" });
   } catch (err) {
     res.status(500).json({ error: "Server error" });
   }
@@ -214,12 +215,81 @@ const getChat = async (req, res) => {
   }
 };
 
-const savePrompt = async(req, res) =>{
+const savePrompt = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.userId);
+    if (!user) return res.status(404).json({ error: "User not found" });
 
-}
+    const { text } = req.body;
 
-const getPrompt = async(req, res) =>{
+    const prompt = await Prompt.create({
+      userId: req.user.userId,
+      text,
+      isPinned: false, 
+    });
 
-}
+    res.status(201).json({ message: "Prompt Successfully Saved", prompt });
+  } catch (error) {
+    res.status(500).json({ error: "Server error" });
+  }
+};
 
-module.exports = { getCurrentUser, createFolder, deleteFolder, getUserFolders, getChat, moveChat, deleteChat, getUngroupedChats, savePrompt, getPrompt }; 
+const getPrompts   = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.userId);
+    if (!user) return res.status(404).json({ error: "User not found" });
+
+    const pinned = await Prompt.find({ userId: req.user.userId, isPinned: true })
+      .sort({ createdAt: -1 })
+      .limit(5);
+
+    let prompts = [...pinned];
+    if (pinned.length < 5) {
+      const remaining = 5 - pinned.length;
+      const recentUnpinned = await Prompt.find({
+        userId: req.user.userId,
+        isPinned: false,
+      })
+        .sort({ createdAt: -1 })
+        .limit(remaining);
+
+      prompts = [...pinned, ...recentUnpinned];
+    }
+
+    res.status(200).json({ savedPrompts: prompts });
+  } catch (error) {
+    res.status(500).json({ error: "Server error" });
+  }
+};
+
+const togglePinPrompt = async (req, res) => {
+  try {
+    const { promptId } = req.body;
+    const userId = req.user.userId;
+
+    const prompt = await Prompt.findOne({ _id: promptId, userId });
+    if (!prompt) return res.status(404).json({ error: "Prompt not found" });
+
+    prompt.isPinned = !prompt.isPinned;
+    await prompt.save();
+
+    res.json({ message: `Prompt ${prompt.isPinned ? "pinned" : "unpinned"}`, prompt });
+  } catch (error) {
+    res.status(500).json({ error: "Server error" });
+  }
+};
+
+const deletePrompt = async (req, res) => {
+  try {
+    const { promptId } = req.body;
+
+    const prompt = await Prompt.findOneAndDelete({ _id: promptId });
+    if (!prompt) return res.status(404).json({ error: "Prompt not found" });
+
+    res.json({ message: "Prompt deleted sucessfully" });
+  } catch (error) {
+    res.status(500).json({ error: "Server error" });
+  }
+};
+
+module.exports = { getCurrentUser, createFolder, deleteFolder, getUserFolders, getChat, moveChat, deleteChat, getUngroupedChats, savePrompt, getPrompts, togglePinPrompt, deletePrompt}; 

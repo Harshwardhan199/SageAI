@@ -81,6 +81,7 @@ const Message = forwardRef(({ sender, text, style, loadSavedPrompts }, ref) => {
     }));
   };
 
+  //Save Prompt
   const SavePrompt = async (text) => {
     try {
       await api.post("/user/savePrompt", { text }, { withCredentials: true });
@@ -99,7 +100,7 @@ const Message = forwardRef(({ sender, text, style, loadSavedPrompts }, ref) => {
       ref={ref}
       className={`w-full flex ${isUser ? "justify-end" : "justify-start"}`}
     >
-      <div className={`relative py-2 rounded-2xl shadow ${isUser ? "max-w-full px-4 bg-[#1f1f1f] text-white group" : "w-full text-white"}`} style={style}>
+      <div className={`relative flex py-2 rounded-2xl shadow ${isUser ? "max-w-full px-4 bg-[#1f1f1f] text-white group" : "w-full text-white"}`} style={style}>
         {isUser ? text :
           blocks.map((block, i) => {
 
@@ -278,7 +279,6 @@ const Message = forwardRef(({ sender, text, style, loadSavedPrompts }, ref) => {
             }
 
             else if (block.type === "text") {
-
               return (
                 <div key={i} className="markdown">
                   <ReactMarkdown
@@ -296,14 +296,12 @@ const Message = forwardRef(({ sender, text, style, loadSavedPrompts }, ref) => {
 
         {isUser &&
           <div>
-            <div className="absolute top-11 right-7 flex p-1 rounded-lg bg-[#1f1f1f] opacity-0 group-hover:opacity-100 transition-all duration-250 ">
-              <img src="https://img.icons8.com/?size=100&id=pNYOTp5DinZ3&format=png&color=ffffff" alt="Copy" className="shrink-0 w-4 h-4" />
+            <div className="absolute top-11 right-0 flex gap-1 opacity-0 group-hover:opacity-100 transition-all duration-250 ">
+              <img src="https://img.icons8.com/?size=100&id=pNYOTp5DinZ3&format=png&color=ffffff" alt="Copy" className="p-1 rounded-lg bg-[#1f1f1f] shrink-0 w-7 h-7" onClick={() => navigator.clipboard.writeText(text)}/>
+              {user &&
+                <img src="https://img.icons8.com/?size=100&id=bc20TOtEmtiP&format=png&color=ffffff" alt="Saved prompts" className="p-1 rounded-lg bg-[#1f1f1f] w-7 h-7" onClick={() => SavePrompt(text)} />
+              }
             </div>
-            {user &&
-              <div className="absolute top-11 right-0 flex p-1 rounded-lg bg-[#1f1f1f] opacity-0 group-hover:opacity-100 transition-all duration-250 ">
-                <img src="https://img.icons8.com/?size=100&id=bc20TOtEmtiP&format=png&color=000000" alt="Saved prompts" className="invert w-4 h-4" onClick={() => SavePrompt(text)} />
-              </div>
-            }
           </div>
         }
 

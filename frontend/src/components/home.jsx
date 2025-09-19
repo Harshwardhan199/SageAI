@@ -26,6 +26,7 @@ const Home = () => {
     const refLogo = useRef(null);
 
     // State for Saved Prompts
+    const [savedPrompts, setSavedPrompts] = useState([]);
     const [showSavedPrompts, setShowSavedPrompts] = useState(false);
 
     // Ungrouped Chats 
@@ -409,8 +410,32 @@ const Home = () => {
     };
 
     //Load saved prompts
-    const LoadSavedPrompts = async() =>{
+    const LoadSavedPrompts = async () => {
+        try {
+            const res = await api.get("/user/getPrompts");
+            setSavedPrompts(res.data.savedPrompts)
+        } catch (error) {
+            console.error("Error fetching saved prompts:", error.response?.data || error.message);
+        }
+    }
 
+    const TogglePinPrompt = async (promptId) => {
+        try {
+            await api.post("/user/togglePinPrompt", { promptId }, { withCredentials: true });
+        } catch (error) {
+            console.error("Error Toggling pin-Unpin Saved Prompt:", error.response?.data || error.message);
+        }
+    }
+
+
+    const DeletePrompt = async (promptId) => {
+        try {
+            await api.post("/user/deletePrompt", { promptId }, { withCredentials: true });
+        } catch (error) {
+            console.error("Error Deleting Saved Prompt:", error.response?.data || error.message);
+        }
+
+        LoadSavedPrompts();
     }
 
     // New Chat 
@@ -841,77 +866,45 @@ const Home = () => {
                             <div className="text-[20px]">Sage</div>
                         </div>
 
-                        <div className="flex items-center gap-3">
-                            <button className="relative h-[20px]">
-                                <img src="https://img.icons8.com/?size=100&id=bc20TOtEmtiP&format=png&color=000000" alt="Saved prompts" className="invert w-[20px] h-auto" onClick={() => setShowSavedPrompts(!showSavedPrompts)} />
-                                {showSavedPrompts && (
-                                    <div className="absolute right-0 top-[calc(100%+4px)] flex flex-col min-w-40 max-w-60 gap-1 text-left rounded-lg bg-[#141414] border-2 border-[#212121] drop-shadow">
-                                        {/* Header */}
-                                        <div className="font-bold mt-2 ml-2">Saved Prompts</div>
-                                        <div className="w-full h-[1px] bg-gray-300"></div>
+                        {user &&
+                            <div className="flex items-center gap-3">
+                                <button className="relative h-[20px]">
+                                    <img src="https://img.icons8.com/?size=100&id=bc20TOtEmtiP&format=png&color=000000" alt="Saved prompts" className="invert w-[20px] h-auto" onClick={() => setShowSavedPrompts(!showSavedPrompts)} />
+                                    {showSavedPrompts && (
+                                        <div className="absolute right-0 top-[calc(100%+4px)] flex flex-col min-w-40 max-w-60 gap-1 text-left rounded-lg bg-[#141414] border-2 border-[#212121] drop-shadow">
+                                            {/* Header */}
+                                            <div className="font-bold mt-2 ml-2">Saved Prompts</div>
+                                            <div className="w-full h-[1px] bg-gray-300"></div>
 
-                                        {/* Prompt list */}
-                                        <div className="flex flex-col flex-1 divide-y divide-[#212121] min-w-0">
-                                            {/* Row 1 */}
-                                            <div className="flex items-center justify-between gap-2 px-2 py-1 hover:bg-[#191919]">
-                                                <div className="flex items-center gap-2 min-w-0">
-                                                    <img src="https://img.icons8.com/?size=100&id=104&format=png&color=ffffff" alt="Star" className="shrink-0 w-3 h-3" />
-                                                    <div className="flex-1 min-w-0 overflow-hidden whitespace-nowrap truncate">Gsgs</div>
-                                                </div>
-                                                <div className="flex items-center gap-1 shrink-0">
-                                                    <img src="https://img.icons8.com/?size=100&id=pNYOTp5DinZ3&format=png&color=ffffff" alt="Copy" className="shrink-0 w-4 h-4" />
-                                                    <img src="https://img.icons8.com/?size=100&id=14237&format=png&color=ffffff" alt="Delete" className="shrink-0 w-4 h-4" />
-                                                </div>
+                                            {/* Prompt list */}
+                                            <div className="flex flex-col flex-1 divide-y divide-[#212121] min-w-0">
+
+                                                {savedPrompts.map((promptData) => {
+                                                    <div key={promptData._id} className="flex items-center justify-between gap-2 px-2 py-1 hover:bg-[#191919]">
+                                                        <div className="flex items-center gap-2 min-w-0">
+                                                            <img src={promptData.isPinned ? "https://img.icons8.com/?size=100&id=104&format=png&color=ffffff" : "https://img.icons8.com/?size=100&id=104&format=png&color=ffffff"} alt="Star" className="shrink-0 w-3 h-3" onClick={() => TogglePinPrompt(promptData._id)} />
+                                                            <div className="flex-1 min-w-0 overflow-hidden whitespace-nowrap truncate">{promptData.text}</div>
+                                                        </div>
+                                                        <div className="flex items-center gap-1 shrink-0">
+                                                            <img src="https://img.icons8.com/?size=100&id=pNYOTp5DinZ3&format=png&color=ffffff" alt="Copy" className="shrink-0 w-4 h-4" onClick={() => navigator.clipboard.writeText(text)} />
+                                                            <img src="https://img.icons8.com/?size=100&id=14237&format=png&color=ffffff" alt="Delete" className="shrink-0 w-4 h-4" onClick={() => DeletePrompt(promptData._id)} />
+                                                        </div>
+                                                    </div>
+                                                })}
+
                                             </div>
 
-                                            {/* Row 2 (note: removed outer flex-1) */}
-                                            <div className="flex items-center justify-between gap-2 px-2 py-1 hover:bg-[#191919]">
-                                                <div className="flex items-center gap-2 min-w-0">
-                                                    <img src="https://img.icons8.com/?size=100&id=104&format=png&color=ffffff" alt="Star" className="shrink-0 w-3 h-3" />
-                                                    <div className="flex-1 min-w-0 overflow-hidden whitespace-nowrap truncate">Fgs kgs stie ba ib aiwb ia</div>
-                                                </div>
-                                                <div className="flex items-center gap-1 shrink-0">
-                                                    <img src="https://img.icons8.com/?size=100&id=pNYOTp5DinZ3&format=png&color=ffffff" alt="Copy" className="shrink-0 w-4 h-4" />
-                                                    <img src="https://img.icons8.com/?size=100&id=14237&format=png&color=ffffff" alt="Delete" className="shrink-0 w-4 h-4" />
-                                                </div>
-                                            </div>
-
-                                            {/* Row 3 */}
-                                            <div className="flex items-center justify-between gap-2 px-2 py-1 hover:bg-[#191919]">
-                                                <div className="flex items-center gap-2 min-w-0">
-                                                    <img src="https://img.icons8.com/?size=100&id=104&format=png&color=ffffff" alt="Star" className="shrink-0 w-3 h-3" />
-                                                    <div className="flex-1 min-w-0 overflow-hidden whitespace-nowrap truncate">Ygd eggssw dhsbsa 5yn</div>
-                                                </div>
-                                                <div className="flex items-center gap-1 shrink-0">
-                                                    <img src="https://img.icons8.com/?size=100&id=pNYOTp5DinZ3&format=png&color=ffffff" alt="Copy" className="shrink-0 w-4 h-4" />
-                                                    <img src="https://img.icons8.com/?size=100&id=14237&format=png&color=ffffff" alt="Delete" className="shrink-0 w-4 h-4" />
-                                                </div>
-                                            </div>
-
-                                            {/* Row 4 */}
-                                            <div className="flex items-center justify-between gap-2 px-2 py-1 hover:bg-[#191919]">
-                                                <div className="flex items-center gap-2 min-w-0">
-                                                    <img src="https://img.icons8.com/?size=100&id=104&format=png&color=ffffff" alt="Star" className="shrink-0 w-3 h-3" />
-                                                    <div className="flex-1 min-w-0 overflow-hidden whitespace-nowrap truncate">Hgsg wearV</div>
-                                                </div>
-                                                <div className="flex items-center gap-1 shrink-0">
-                                                    <img src="https://img.icons8.com/?size=100&id=pNYOTp5DinZ3&format=png&color=ffffff" alt="Copy" className="shrink-0 w-4 h-4" />
-                                                    <img src="https://img.icons8.com/?size=100&id=14237&format=png&color=ffffff" alt="Delete" className="shrink-0 w-4 h-4" />
-                                                </div>
-                                            </div>
+                                            {/* Footer */}
+                                            <div className="w-full h-[1px] bg-gray-300"></div>
+                                            <div className="ml-2 mr-2 mb-2 text-sm text-center">Manage all</div>
                                         </div>
+                                    )}
+                                </button>
 
-                                        {/* Footer */}
-                                        <div className="w-full h-[1px] bg-gray-300"></div>
-                                        <div className="ml-2 mr-2 mb-2 text-sm text-center">Manage all</div>
-                                    </div>
-                                )}
-                            </button>
-
-                            <button className="h-[20px]">
-                                <img src="https://img.icons8.com/?size=100&id=g1EQCit0RQ7Z&format=png&color=1A1A1A" alt="Share Chat" className="invert w-[18px] h-auto" />
-                            </button>
-                        </div>
+                                <button className="h-[20px]">
+                                    <img src="https://img.icons8.com/?size=100&id=g1EQCit0RQ7Z&format=png&color=1A1A1A" alt="Share Chat" className="invert w-[18px] h-auto" />
+                                </button>
+                            </div>}
 
                     </div>
 
