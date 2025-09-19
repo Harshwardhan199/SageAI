@@ -24,6 +24,5 @@ const PromptSchema = new mongoose.Schema(
 
 PromptSchema.index({ userId: 1, isPinned: -1, createdAt: -1 });
 
-const Prompt = mongoose.model("Prompt", PromptSchema);
+module.exports = mongoose.model("Prompt", PromptSchema);
 
-export default Prompt;
