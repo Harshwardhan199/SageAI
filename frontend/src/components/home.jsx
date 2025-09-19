@@ -415,7 +415,7 @@ const Home = () => {
         try {
             const res = await api.get("/user/getPrompts");
             console.log("Prompts: ", res.data.savedPrompts);
-            
+
             setSavedPrompts(res.data.savedPrompts)
         } catch (error) {
             console.error("Error fetching saved prompts:", error.response?.data || error.message);
@@ -425,11 +425,11 @@ const Home = () => {
     const TogglePinPrompt = async (promptId) => {
         try {
             await api.post("/user/togglePinPrompt", { promptId }, { withCredentials: true });
+            LoadSavedPrompts();
         } catch (error) {
             console.error("Error Toggling pin-Unpin Saved Prompt:", error.response?.data || error.message);
         }
     }
-
 
     const DeletePrompt = async (promptId) => {
         try {
@@ -744,7 +744,8 @@ const Home = () => {
                                                                                 <div className="px-4 py-1 rounded-lg hover:bg-[#323232] flex justify-between items-center cursor-pointer gap-2">
                                                                                     <div>Move to</div>
                                                                                     <img src="https://img.icons8.com/?size=100&id=61&format=png&color=ffffff" alt="Move to" className="h-[14px]" />
-                                                                                </div>                                                                                <div className="absolute left-[97%] top-0 ml-1 hidden group-hover:flex flex-col gap-1 min-w-28 p-1 bg-[#272727] border border-[#393939] drop-shadow rounded-lg z-20">
+                                                                                </div>
+                                                                                <div className="absolute left-[97%] top-0 ml-1 hidden group-hover:flex flex-col gap-1 min-w-28 p-1 bg-[#272727] border border-[#393939] drop-shadow rounded-lg z-20">
                                                                                     {folders.filter(f => f._id !== folder._id).map((f) => (
                                                                                         <div key={f._id} className="px-3 py-1 rounded-lg hover:bg-[#323232]" onClick={() => handleMoveChat(chat._id, f._id)}>{f.name}</div>
                                                                                     ))}
@@ -879,23 +880,23 @@ const Home = () => {
                                             <div className="font-bold mt-2 ml-2 text-center">Saved Prompts</div>
                                             <div className="w-full h-[1px] bg-gray-300"></div>
 
-                                            {/* Prompt list */}
+                                            {/* Prompt list divide-y divide-[#212121] min-w-0 */}
                                             {savedPrompts.length > 0 &&
                                                 <div>
-                                                    <div className="flex flex-col flex-1 divide-y divide-[#212121] min-w-0">
+                                                    <div className="flex flex-col flex-1 min-h-30">
 
-                                                        {savedPrompts.map((promptData) => {
+                                                        {savedPrompts.map((promptData) => (
                                                             <div key={promptData._id} className="flex items-center justify-between gap-2 px-2 py-1 hover:bg-[#191919]">
                                                                 <div className="flex items-center gap-2 min-w-0">
-                                                                    <img src={promptData.isPinned ? "https://img.icons8.com/?size=100&id=104&format=png&color=ffffff" : "https://img.icons8.com/?size=100&id=104&format=png&color=ffffff"} alt="Star" className="shrink-0 w-3 h-3" onClick={() => TogglePinPrompt(promptData._id)} />
+                                                                    <img src={promptData.isPinned ? "https://img.icons8.com/?size=100&id=7856&format=png&color=FFFFFF" : "https://img.icons8.com/?size=100&id=104&format=png&color=ffffff"} alt="Star" className="shrink-0 w-3 h-3" onClick={() => TogglePinPrompt(promptData._id)} />
                                                                     <div className="flex-1 min-w-0 overflow-hidden whitespace-nowrap truncate">{promptData.text}</div>
                                                                 </div>
                                                                 <div className="flex items-center gap-1 shrink-0">
-                                                                    <img src="https://img.icons8.com/?size=100&id=pNYOTp5DinZ3&format=png&color=ffffff" alt="Copy" className="shrink-0 w-4 h-4" onClick={() => navigator.clipboard.writeText(text)} />
+                                                                    <img src="https://img.icons8.com/?size=100&id=pNYOTp5DinZ3&format=png&color=ffffff" alt="Copy" className="shrink-0 w-4 h-4" onClick={() => navigator.clipboard.writeText(promptData.text)} />
                                                                     <img src="https://img.icons8.com/?size=100&id=14237&format=png&color=ffffff" alt="Delete" className="shrink-0 w-4 h-4" onClick={() => DeletePrompt(promptData._id)} />
                                                                 </div>
                                                             </div>
-                                                        })}
+                                                        ))}
 
                                                     </div>
 
@@ -904,9 +905,9 @@ const Home = () => {
                                                 </div>
                                             }
                                             {savedPrompts.length == 0 &&
-                                            <div className="flex items-center justify-center">
-                                                <div className="text-center mb-1">No Prompts saved</div>
-                                            </div>
+                                                <div className="flex items-center justify-center  min-h-30">
+                                                    <div className="text-center mb-1">No Prompts saved</div>
+                                                </div>
                                             }
                                         </div>
                                     )}
@@ -915,7 +916,8 @@ const Home = () => {
                                 <button className="h-[20px]">
                                     <img src="https://img.icons8.com/?size=100&id=g1EQCit0RQ7Z&format=png&color=1A1A1A" alt="Share Chat" className="invert w-[18px] h-auto" />
                                 </button>
-                            </div>}
+                            </div>
+                        }
 
                     </div>
 
