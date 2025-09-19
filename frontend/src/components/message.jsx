@@ -7,6 +7,8 @@ import rehypeRaw from "rehype-raw";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
 
+import { toast } from "react-toastify";
+
 import api from "../api/axios";
 
 import { useAuth } from "../context/AuthContext";
@@ -85,6 +87,7 @@ const Message = forwardRef(({ sender, text, style, loadSavedPrompts }, ref) => {
   const SavePrompt = async (text) => {
     try {
       await api.post("/user/savePrompt", { text }, { withCredentials: true });
+      toast.success("Prompt saved!");
     } catch (error) {
       console.error("Error Saving Prompt:", error);
     }
@@ -297,7 +300,15 @@ const Message = forwardRef(({ sender, text, style, loadSavedPrompts }, ref) => {
         {isUser &&
           <div>
             <div className="absolute top-11 right-0 flex gap-1 opacity-0 group-hover:opacity-100 transition-all duration-250 ">
-              <img src="https://img.icons8.com/?size=100&id=pNYOTp5DinZ3&format=png&color=ffffff" alt="Copy" className="p-1 rounded-lg bg-[#1f1f1f] shrink-0 w-7 h-7" onClick={() => navigator.clipboard.writeText(text)}/>
+              <img
+                src="https://img.icons8.com/?size=100&id=pNYOTp5DinZ3&format=png&color=ffffff"
+                alt="Copy"
+                className="p-1 rounded-lg bg-[#1f1f1f] shrink-0 w-7 h-7"
+                onClick={() => {
+                  navigator.clipboard.writeText(text);
+                  toast.success("Copied!");
+                }}
+              />
               {user &&
                 <img src="https://img.icons8.com/?size=100&id=bc20TOtEmtiP&format=png&color=ffffff" alt="Saved prompts" className="p-1 rounded-lg bg-[#1f1f1f] w-7 h-7" onClick={() => SavePrompt(text)} />
               }

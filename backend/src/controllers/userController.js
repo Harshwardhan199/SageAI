@@ -235,6 +235,8 @@ const savePrompt = async (req, res) => {
 };
 
 const getPrompts   = async (req, res) => {
+  console.log("req.user:", req.user);
+
   try {
     const user = await User.findById(req.user.userId);
     if (!user) return res.status(404).json({ error: "User not found" });
