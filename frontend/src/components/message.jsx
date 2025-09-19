@@ -101,7 +101,7 @@ const Message = forwardRef(({ sender, text, style, loadSavedPrompts }, ref) => {
   return (
     <div
       ref={ref}
-      className={`w-full flex flex-col gap-1 ${isUser ? "justify-end group" : "justify-start"}`}
+      className={`w-full flex gap-1 ${isUser ? "flex-col justify-end group" : "justify-start"}`}
     >
       <div className={` flex py-2 rounded-2xl shadow ${isUser ? "self-end max-w-full px-4 bg-[#1f1f1f] text-white group" : "w-full text-white"}`} style={style}>
         {isUser ? text :
