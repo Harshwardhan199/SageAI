@@ -101,9 +101,9 @@ const Message = forwardRef(({ sender, text, style, loadSavedPrompts }, ref) => {
   return (
     <div
       ref={ref}
-      className={`w-full flex ${isUser ? "justify-end" : "justify-start"}`}
+      className={`w-full flex flex-col gap-1 ${isUser ? "justify-end group" : "justify-start"}`}
     >
-      <div className={`relative flex py-2 rounded-2xl shadow ${isUser ? "max-w-full px-4 bg-[#1f1f1f] text-white group" : "w-full text-white"}`} style={style}>
+      <div className={` flex py-2 rounded-2xl shadow ${isUser ? "self-end max-w-full px-4 bg-[#1f1f1f] text-white group" : "w-full text-white"}`} style={style}>
         {isUser ? text :
           blocks.map((block, i) => {
 
@@ -297,26 +297,44 @@ const Message = forwardRef(({ sender, text, style, loadSavedPrompts }, ref) => {
           })
         }
 
-        {isUser &&
+      </div>
+
+      {isUser && (
           <div>
-            <div className="absolute top-11 right-0 flex gap-1 opacity-0 group-hover:opacity-100 transition-all duration-250 ">
-              <img
-                src="https://img.icons8.com/?size=100&id=pNYOTp5DinZ3&format=png&color=ffffff"
-                alt="Copy"
-                className="p-1 rounded-lg bg-[#1f1f1f] shrink-0 w-7 h-7"
+            <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100  transition-all duration-250">
+              {/* Copy button */}
+              <div
+                className="w-7 h-7 flex items-center justify-center rounded-lg bg-[#1f1f1f] cursor-pointer"
                 onClick={() => {
                   navigator.clipboard.writeText(text);
                   toast.success("Copied!");
                 }}
-              />
-              {user &&
-                <img src="https://img.icons8.com/?size=100&id=bc20TOtEmtiP&format=png&color=ffffff" alt="Saved prompts" className="p-1 rounded-lg bg-[#1f1f1f] w-7 h-7" onClick={() => SavePrompt(text)} />
-              }
+              >
+                <img
+                  src="https://img.icons8.com/?size=100&id=pNYOTp5DinZ3&format=png&color=ffffff"
+                  alt="Copy"
+                  className="w-4 h-4"
+                />
+              </div>
+
+              {/* Save button */}
+              {user && (
+                <div
+                  className="w-7 h-7 flex items-center justify-center rounded-lg bg-[#1f1f1f] cursor-pointer"
+                  onClick={() => SavePrompt(text)}
+                >
+                  <img
+                    src="https://img.icons8.com/?size=100&id=bc20TOtEmtiP&format=png&color=ffffff"
+                    alt="Saved prompts"
+                    className="w-4 h-4"
+                  />
+                </div>
+              )}
             </div>
           </div>
-        }
-
-      </div>
+        )
+      }
+        
     </div>
   );
 });

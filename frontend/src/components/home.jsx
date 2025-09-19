@@ -562,7 +562,7 @@ const Home = () => {
 
             const latestUserHeight = latestUserRef.current.getBoundingClientRect().height;
 
-            const height = clampedVisibleHeight - latestUserHeight - 40;
+            const height = clampedVisibleHeight - latestUserHeight - 20;
 
             setResponseHeight(height > 0 ? height : 0);
         }
@@ -860,7 +860,7 @@ const Home = () => {
                 <div className={`relative flex flex-1 flex-col items-center justify-center min-h-screen  bg-black ${!toggleSidebar ? "ml-[58px]" : "ml-[301px]"} transition-all duration-300 ease-in-out`}>
 
                     {/* TitleBar [#161616] */}
-                    <div className="sticky top-0 flex w-full justify-between text-white pt-4 pr-8 pb-4 bg-[#030303] border-b border-b-[#151515]" ref={titleBarRef}>
+                    <div className="sticky top-0 flex w-full justify-between text-white pt-4 pr-8 pb-4 bg-[#030303] border-b border-b-[#151515] z-2" ref={titleBarRef}>
                         <div className="flex items-center gap-3">
                             <div className="flex items-center">
                                 {/* <button className="h-[20px]">
@@ -922,11 +922,11 @@ const Home = () => {
                     </div>
 
                     {/* Content */}
-                    <div className="flex flex-col w-full flex-1 mt-[1px] items-center justify-center px-2 overflow-y-auto">
+                    <div className="flex flex-col w-full flex-1 mt-[1px] items-center justify-center px-2 overflow-y-auto z-1">
 
                         <div className={`flex max-w-[780px] w-full min-w-[600px] h-min-[500px] rounded-2xl flex-grow-0 overflow-hidden ${messages.length == 0 ? "bg-[#161616]" : "h-full bg-transparent"}`}>
 
-                            <div className={`flex flex-col w-full px-2 pt-4 pb-2 gap-5 flex-grow overflow-y-auto ${messages.length == 0 ? "items-center justify-start" : ""}`} ref={containerRef}>
+                            <div className={`flex flex-col w-full px-2 pt-4 pb-2 gap-0 flex-grow overflow-y-auto ${messages.length == 0 ? "items-center justify-start" : ""}`} ref={containerRef}>
 
                                 {(messages.length == 0) &&
                                     <div>
@@ -1029,7 +1029,7 @@ const Home = () => {
 
                     {/* SearchBar */}
                     {(messages.length > 0) &&
-                        <div className="sticky bottom-0 flex flex-col items-center w-full h-17 bg-black" ref={searchBarRef}>
+                        <div className="sticky bottom-0 flex flex-col items-center w-full h-17 bg-black z-2" ref={searchBarRef}>
 
                             <div className="relative flex justify-center w-full">
 
