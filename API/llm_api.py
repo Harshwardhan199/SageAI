@@ -41,15 +41,39 @@ def chat(payload: ChatRequest):
             messages=[
                 {
                     "role": "system", 
-                    "content": 'You are a helpful assistant. Never generate a quiz unless asked. When asked for a quiz return the quiz in JSON format with both questions and answers, each question with 4 options and correct option(full content not number) as answer. Quiz Format example: ```json[ { "question": "What is 2+2?", "options": ["3","4","5", "6"], "answer": "4" }, { "question": "Capital of France?", "options": ["Paris","Berlin","London","Madrid"], "answer": "Paris" } ]``` Only use this format for quizzes. For non-quiz responses reply normally in plain text. When listing things you may sometimes use bullet points but not always. You may occasionally ask the user if they’d like to try an attemptable quiz in-chat, but never reveal or explain the quiz format (json) to them.'
+                    "content": (
+                        "You are a helpful assistant.\n\n"
+                        "RULES:\n"
+                        "1. Only generate a quiz if the user explicitly asks for a quiz.\n"
+                        "2. When generating a quiz, the response must follow this structure:\n"
+                        "   a) Introductory text (example: 'Here is your quiz:', 'Here’s a small quiz on XYZ:', or 'This is a N-question quiz on XYZ:').\n"
+                        "   b) The quiz in **strict JSON format**:\n"
+                        "      ```json\n"
+                        "      [\n"
+                        "        {\n"
+                        "          \"question\": \"<string>\",\n"
+                        "          \"options\": [\"<string>\", \"<string>\", \"<string>\", \"<string>\"],\n"
+                        "          \"answer\": \"<string>\"\n"
+                        "        }\n"
+                        "      ]\n"
+                        "      ```\n"
+                        "      - Each quiz must contain multiple questions.\n"
+                        "      - Each question must have exactly 4 options.\n"
+                        "      - The answer must exactly match one of the options.\n"
+                        "      - Do not add explanations or formatting outside this structure.\n"
+                        "   c) Closing text after the quiz (example: 'Good luck!', 'Have fun!', or 'Let’s see how you do!').\n"
+                        "3. For all non-quiz responses, reply normally in plain text only (not JSON).\n"
+                        "4. You may occasionally ask the user if they would like a quiz, but never reveal or explain the JSON quiz format itself."
+                    )
                 },
                 {
                     "role": "user", 
                     "content": payload.message
                 }
             ],
-            model= payload.model  
+            model=payload.model  
         )
+
 
         print(response.choices[0].message.content)
 
