@@ -69,6 +69,7 @@ const Home = () => {
 
     const inputBarRef = useRef(null);
     const [promptText, setPromptText] = useState("");
+    const [loading, setLoading] = useState(false);
 
     const containerRef = useRef(null);
     const latestUserRef = useRef(null);
@@ -450,9 +451,11 @@ const Home = () => {
     // Send prompt req
     const handlePrompt = async () => {
 
-        if (promptText == "") {
+        if (promptText == "" || loading == true) {
             return;
         }
+
+        setLoading(true);
 
         let prompt = promptText;
         setPromptText("");
@@ -536,6 +539,8 @@ const Home = () => {
                 }
             }
         }
+
+        setLoading(false);
     };
 
     // On Hit enter
@@ -803,7 +808,7 @@ const Home = () => {
                                                         className="options-button w-[14px] h-auto mx-2"
                                                     />
                                                     {chatMenuId === chat._id && (
-                                                        <div className="menu-container absolute -left-[15px] top-full flex flex-col gap-1 min-w-23 p-1 bg-[#272727] border-1 border-[#393939] drop-shadow rounded-lg z-1" ref={chatMenuRef} onClick={(e) => e.stopPropagation()}>
+                                                        <div className="menu-container absolute -left-[15px] top-full flex flex-col gap-1 min-w-23 p-1 bg-[#272727] border-1 border-[#393939] drop-shadow rounded-lg z-5" ref={chatMenuRef} onClick={(e) => e.stopPropagation()}>
                                                             <div className="px-3 py-1 rounded-lg hover:bg-[#323232]">Rename</div>
                                                             <div className="h-[1px] w-full bg-[#393939]"></div>
                                                             <div className="relative group">

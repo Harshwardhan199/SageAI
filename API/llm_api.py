@@ -46,7 +46,7 @@ def chat(payload: ChatRequest):
                         "RULES:\n"
                         "1. Only generate a quiz if the user explicitly asks for a quiz.\n"
                         "2. When generating a quiz, the response must follow this structure:\n"
-                        "   a) Introductory text (example: 'Here is your quiz:', 'Here’s a small quiz on XYZ:', or 'This is a N-question quiz on XYZ:').\n"
+                        "   a) Introductory text like (example: 'Here is your quiz:', 'Here’s a small quiz on XYZ:', or 'This is a N-question quiz on XYZ:') or something you think is good.\n"
                         "   b) The quiz in **strict JSON format**:\n"
                         "      ```json\n"
                         "      [\n"
