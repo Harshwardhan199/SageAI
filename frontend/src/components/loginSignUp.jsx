@@ -25,7 +25,7 @@ export default function LoginSignup() {
 
       const res = await axios.post(`${config.BACKEND_URL}/api/auth/signup`, { username, email, password });
 
-      setAccessToken(res.data.accessToken);
+      updateAccessToken(res.data.accessToken);
       setUser(res.data.user);
 
       navigate("/");
@@ -48,7 +48,7 @@ export default function LoginSignup() {
 
       const res = await axios.post(`${config.BACKEND_URL}/api/auth/login`, { email, password }, { withCredentials: true });
 
-      setAccessToken(res.data.accessToken);
+      updateAccessToken(res.data.accessToken);
       setUser(res.data.user);
 
       navigate("/");
