@@ -19,7 +19,11 @@ export default function LoginSignup() {
     const data = Object.fromEntries(formData.entries());
 
     try {
-      const res = await axios.post(`${config.BACKEND_URL}/api/auth/signup`, data);
+      const username = data.username;
+      const email = data.email;
+      const password = data.password;
+
+      const res = await axios.post(`${config.BACKEND_URL}/api/auth/signup`, { username, email, password });
 
       setAccessToken(res.data.accessToken);
       setUser(res.data.user);
@@ -39,7 +43,10 @@ export default function LoginSignup() {
     const data = Object.fromEntries(formData.entries());
 
     try {
-      const res = await axios.post(`${config.BACKEND_URL}/api/auth/login`, data, { withCredentials: true });
+      const email = data.email;
+      const password = data.password;
+
+      const res = await axios.post(`${config.BACKEND_URL}/api/auth/login`, { email, password }, { withCredentials: true });
 
       setAccessToken(res.data.accessToken);
       setUser(res.data.user);
@@ -71,7 +78,7 @@ export default function LoginSignup() {
           const res = await axios.post(`${config.BACKEND_URL}/api/auth/google`, { code }, { withCredentials: true });
 
           updateAccessToken(res.data.accessToken);
-          
+
           setUser(res.data.data);
 
           navigate("/");
@@ -104,7 +111,7 @@ export default function LoginSignup() {
               <input
                 type="text"
                 name="email"
-                placeholder="Username or Email"
+                placeholder="Email"
                 autoComplete="off"
                 className="w-full py-[13px] pr-[50px] pl-5 bg-[#3a3a3a] rounded-lg text-lg text-white font-medium placeholder-[#7f8c8d] outline-none"
               />
