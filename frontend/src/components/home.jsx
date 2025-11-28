@@ -77,6 +77,7 @@ const Home = () => {
 
     const [responseHeight, setResponseHeight] = useState(0);
 
+    const [showProfileMenu, setShowProfileMenu] = useState(false);
     // Sidebar Toggle
     const LeftSideToggle = () => {
         if (!leftSideToggleClicked) {
@@ -649,9 +650,9 @@ const Home = () => {
                             <div className={`transition-all duration-200 ease-in-out overflow-visible whitespace-nowrap ${!toggleSidebar ? "opacity-0" : "opacity-100"}`}>
 
                                 {/* Search Bar */}
-                                <div className="flex item-center w-full rounded-lg bg-[#272727] p-2">
+                                {/* <div className="flex item-center w-full rounded-lg bg-[#272727] p-2">
                                     <input type="text" placeholder="Search" className="w-full outline-0" />
-                                </div>
+                                </div> */}
 
                                 {/* Folder */}
                                 <div className={`flex item-center justify-between w-full rounded-xl bg-[#070707] py-2 text-sm mt-[10px]`}>
@@ -834,24 +835,44 @@ const Home = () => {
 
                             </div>
 
-                            {/* <div className="flex items-center"
-                                    <img src="https://img.icons8.com/?size=100&id=87085&format=png&color=ffffff" alt="chat" className="w-[20px] h-auto" />
-                                </div> */}
+                            {/* <div className="flex items-center">
+                                <img src="https://img.icons8.com/?size=100&id=87085&format=png&color=ffffff" alt="chat" className="w-[20px] h-auto" />
+                            </div> */}
 
                             {/* Chats Bottom Line */}
                             <div className="h-1 w-full"></div>
 
                             {/* User Info Part */}
-                            <div className={`absolute left-0 bottom-0 flex items-center w-full py-1 pl-[4px] border-t-1 border-[#272727] gap-2 bg-[#070707] transition-all duration-200 ease-in-out overflow-hidden whitespace-nowrap ${toggleSidebar ? "w-[268px]" : "w-[58px]"}`}>
+                            <div className={`absolute left-0 bottom-0 flex items-center w-full py-1 pl-[4px] border-t-1 border-[#272727] gap-2 bg-[#070707] transition-all duration-200 ease-in-out overflow-visible whitespace-nowrap ${toggleSidebar ? "w-[268px]" : "w-[58px]"}`}>
 
-                                <div className="flex items-center justify-center h-[35px] w-[35px]  rounded-full m-2 bg-[#323232] flex-shrink-0" onClick={handleLogOut}>
-                                    <img src="https://img.icons8.com/?size=100&id=98957&format=png&color=ffffff" alt="Profile" className="h-[25px] w-[25px]" />
-                                </div>
+                                <div className="relative flex overflow-visible w-full">
 
-                                {/* onClick={getName} */}
-                                <div className={`${toggleSidebar ? "opacity-100 w-auto" : "opacity-0 w-0"} overflow-hidden transition-all duration-300`} >
-                                    <div className="text-[14px]">{username || "Log In"}</div>
-                                    <div className="text-[10px]">Free</div>
+                                    <div className="flex items-center justify-center h-[35px] w-[35px]  rounded-full m-2 bg-[#323232] flex-shrink-0" onClick={() => setShowProfileMenu(!showProfileMenu)}>
+                                        <img src="https://img.icons8.com/?size=100&id=98957&format=png&color=ffffff" alt="Profile" className="h-[25px] w-[25px]" />
+                                    </div>
+
+                                    {showProfileMenu &&
+                                        <div className="absolute left-0 bottom-[calc(100%+4px)] flex flex-col gap-1 w-full p-1 drop-shadow z-30">
+                                            <div className="flex items-center justify-start p-1 bg-[#272727] border border-[#393939] rounded-sm">
+                                                <div className="flex items-center justify-center h-[25px] w-[25px] flex-shrink-0">
+                                                    <img src="https://img.icons8.com/?size=100&id=UCX4DI82AU0H&format=png&color=ffffff" alt="Profile" className="h-[25px] w-[25px]" />
+                                                </div>
+                                                <p className="p-1">Settings</p>
+                                            </div>
+                                            <div className="flex items-center justify-start p-1 bg-[#272727] border border-[#393939] rounded-sm" onClick={handleLogOut}>
+                                                <div className="flex items-center justify-center h-[25px] w-[25px] flex-shrink-0">
+                                                    <img src="https://img.icons8.com/?size=100&id=Q1xkcFuVON39&format=png&color=ffffff" alt="Profile" className="h-[25px] w-[25px]" />
+                                                </div>
+                                                <p className="p-1">Log Out</p>
+                                            </div>
+                                        </div>
+                                    }
+
+                                    {/* onClick={getName} */}
+                                    <div className={`${toggleSidebar ? "opacity-100 w-auto" : "opacity-0 w-0"} overflow-hidden transition-all duration-300`} >
+                                        <div className="text-[14px]">{username || "Log In"}</div>
+                                        <div className="text-[10px]">Free</div>
+                                    </div>
                                 </div>
 
                             </div>
@@ -918,9 +939,9 @@ const Home = () => {
                                     )}
                                 </button>
 
-                                <button className="h-[20px]">
+                                {/* <button className="h-[20px]">
                                     <img src="https://img.icons8.com/?size=100&id=g1EQCit0RQ7Z&format=png&color=1A1A1A" alt="Share Chat" className="invert w-[18px] h-auto" />
-                                </button>
+                                </button> */}
                             </div>
                         }
 
