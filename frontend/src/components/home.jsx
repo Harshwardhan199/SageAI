@@ -811,20 +811,19 @@ const Home = () => {
                                                     {chatMenuId === chat._id && (
                                                         <div className="menu-container absolute -left-[15px] top-full flex flex-col gap-1 min-w-23 p-1 bg-[#272727] border-1 border-[#393939] drop-shadow rounded-lg z-5" ref={chatMenuRef} onClick={(e) => e.stopPropagation()}>
                                                             <div className="px-3 py-1 rounded-lg hover:bg-[#323232]">Rename</div>
+                                                            <div className="px-3 py-1 rounded-lg hover:bg-[#323232]" onClick={() => handleChatDelete(chat._id)}>Delete</div>
                                                             <div className="h-[1px] w-full bg-[#393939]"></div>
                                                             <div className="relative group">
                                                                 <div className="px-4 py-1 rounded-lg hover:bg-[#323232] flex justify-between items-center cursor-pointer gap-2">
                                                                     <div>Move to</div>
                                                                     <img src="https://img.icons8.com/?size=100&id=61&format=png&color=ffffff" alt="Move to" className="h-[14px]" />
                                                                 </div>
-                                                                <div className="absolute left-[97%] top-0 ml-1 hidden group-hover:flex flex-col gap-1 min-w-28 p-1 bg-[#272727] border border-[#393939] drop-shadow rounded-lg z-20">
+                                                                <div className="absolute top-[99%] hidden group-hover:flex flex-col gap-1 min-w-28 p-1 bg-[#272727] border border-[#393939] drop-shadow rounded-lg z-20">
                                                                     {folders.map((folder) => (
                                                                         <div key={folder._id} className="px-3 py-1 rounded-lg hover:bg-[#323232]" onClick={() => handleMoveChat(chat._id, folder._id)}>{folder.name}</div>
                                                                     ))}
                                                                 </div>
                                                             </div>
-                                                            <div className="h-[1px] w-full bg-[#393939]"></div>
-                                                            <div className="px-3 py-1 rounded-lg hover:bg-[#323232]" onClick={() => handleChatDelete(chat._id)}>Delete</div>
                                                         </div>
                                                     )}
                                                 </div>
