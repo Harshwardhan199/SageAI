@@ -155,6 +155,9 @@ const moveChat = async (req, res) => {
 
 const deleteChat = async (req, res) => {
   try {
+
+    console.log("Chat Deleted Req recieved");
+
     const user = await User.findById(req.user.userId);
 
     if (!user) return res.status(404).json({ error: "User not found" });
@@ -172,9 +175,14 @@ const deleteChat = async (req, res) => {
     // Also delete related messages
     await Message.deleteMany({ chatId: chat._id });
 
+    console.log("Chat Deleted from MongoDB");
+
     // Delete Redis context for this chat
     const redis = getRedis();
-    await redis.del(`chat_context:${chat._id}`);
+    const resd = await redis.del(`chat_context:${chat._id}`);
+    console.log("Chat Delete res: ", resd);
+
+    console.log("Chat Deleted  Successfully");
 
     res.json({ message: "Chat Deleted  Successfully" });
   } catch (err) {
@@ -235,7 +243,6 @@ const savePrompt = async (req, res) => {
 };
 
 const getPrompts   = async (req, res) => {
-  console.log("req.user:", req.user);
 
   try {
     const user = await User.findById(req.user.userId);
