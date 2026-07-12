@@ -26,6 +26,7 @@ const FolderSection = ({
   OpenChat,
 
   CreateFolderPopup,
+  handleFolderCustomize,
 }) => {
   return (
     <>
@@ -102,6 +103,7 @@ const FolderSection = ({
             handleChatDelete={handleChatDelete}
             handleMoveChat={handleMoveChat}
             OpenChat={OpenChat}
+            handleFolderCustomize={handleFolderCustomize}
           />
         ))}
       </div>

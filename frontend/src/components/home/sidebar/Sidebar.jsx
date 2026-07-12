@@ -48,6 +48,7 @@ const Sidebar = ({
   toggleFolderMenu,
   handleFolderDelete,
   CreateFolderPopup,
+  handleFolderCustomize,
 
   ToggleChatList,
   OpenChat,
@@ -127,6 +128,7 @@ const Sidebar = ({
               handleMoveChat={handleMoveChat}
               OpenChat={OpenChat}
               CreateFolderPopup={CreateFolderPopup}
+              handleFolderCustomize={handleFolderCustomize}
             />
 
             <ChatSection
