@@ -55,6 +55,7 @@ const Sidebar = ({
   toggleChatMenu,
   handleChatDelete,
   handleMoveChat,
+  handleChatRename,
 
   setShowProfileMenu,
   handleLogOut,
@@ -126,6 +127,7 @@ const Sidebar = ({
               handleFolderDelete={handleFolderDelete}
               handleChatDelete={handleChatDelete}
               handleMoveChat={handleMoveChat}
+              handleChatRename={handleChatRename}
               OpenChat={OpenChat}
               CreateFolderPopup={CreateFolderPopup}
               handleFolderCustomize={handleFolderCustomize}
@@ -144,6 +146,7 @@ const Sidebar = ({
               OpenChat={OpenChat}
               handleChatDelete={handleChatDelete}
               handleMoveChat={handleMoveChat}
+              handleChatRename={handleChatRename}
             />
           </div>
 

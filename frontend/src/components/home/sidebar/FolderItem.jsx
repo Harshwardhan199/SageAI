@@ -18,6 +18,7 @@ const FolderItem = ({
   handleFolderDelete,
   handleChatDelete,
   handleMoveChat,
+  handleChatRename,
 
   OpenChat,
   handleFolderCustomize,
@@ -117,6 +118,7 @@ const FolderItem = ({
             OpenChat={OpenChat}
             handleChatDelete={handleChatDelete}
             handleMoveChat={handleMoveChat}
+            handleChatRename={handleChatRename}
           />
         ))}
       </div>

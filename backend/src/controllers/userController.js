@@ -328,4 +328,30 @@ const deletePrompt = async (req, res) => {
   }
 };
 
-module.exports = { getCurrentUser, createFolder, updateFolder, deleteFolder, getUserFolders, getChat, moveChat, deleteChat, getUngroupedChats, savePrompt, getPrompts, togglePinPrompt, deletePrompt}; 
+const renameChat = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.userId);
+    if (!user) return res.status(404).json({ error: "User not found" });
+
+    const { chatId, title } = req.body;
+    if (!chatId) return res.status(400).json({ error: "Chat ID is required" });
+    if (!title || !title.trim()) return res.status(400).json({ error: "Chat title is required" });
+
+    const chat = await Chat.findOneAndUpdate(
+      { _id: chatId, userId: req.user.userId },
+      { title: title.trim() },
+      { new: true }
+    );
+
+    if (!chat) {
+      return res.status(404).json({ error: "Chat not found or not authorized" });
+    }
+
+    res.json({ message: "Chat Renamed Successfully", chat });
+  } catch (err) {
+    console.error("Rename chat error:", err);
+    res.status(500).json({ error: "Server error" });
+  }
+};
+
+module.exports = { getCurrentUser, createFolder, updateFolder, deleteFolder, getUserFolders, getChat, moveChat, deleteChat, getUngroupedChats, savePrompt, getPrompts, togglePinPrompt, deletePrompt, renameChat}; 

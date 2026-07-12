@@ -22,6 +22,7 @@ const ChatSection = ({
 
   handleChatDelete,
   handleMoveChat,
+  handleChatRename,
 }) => {
   return (
     <>
@@ -69,6 +70,7 @@ const ChatSection = ({
               OpenChat={OpenChat}
               handleChatDelete={handleChatDelete}
               handleMoveChat={handleMoveChat}
+              handleChatRename={handleChatRename}
             />
           ))}
         </div>

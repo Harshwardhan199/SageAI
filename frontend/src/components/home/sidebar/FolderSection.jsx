@@ -22,6 +22,7 @@ const FolderSection = ({
   handleFolderDelete,
   handleChatDelete,
   handleMoveChat,
+  handleChatRename,
 
   OpenChat,
 
@@ -102,6 +103,7 @@ const FolderSection = ({
             handleFolderDelete={handleFolderDelete}
             handleChatDelete={handleChatDelete}
             handleMoveChat={handleMoveChat}
+            handleChatRename={handleChatRename}
             OpenChat={OpenChat}
             handleFolderCustomize={handleFolderCustomize}
           />

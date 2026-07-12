@@ -368,6 +368,26 @@ const Home = () => {
     LoadFolders();
   };
 
+  // Rename Chat
+  const handleChatRename = async (chatId, title) => {
+    try {
+      await api.post(
+        "/user/renameChat",
+        { chatId, title },
+        { withCredentials: true },
+      );
+    } catch (error) {
+      console.error(
+        "Error Renaming Chat:",
+        error.response?.data || error.message,
+      );
+      return null;
+    }
+
+    LoadChats();
+    LoadFolders();
+  };
+
   // Loading Existing Chats
   const LoadChats = async () => {
     // Get User Chats
@@ -738,6 +758,7 @@ const Home = () => {
           toggleChatMenu={toggleChatMenu}
           handleChatDelete={handleChatDelete}
           handleMoveChat={handleMoveChat}
+          handleChatRename={handleChatRename}
           setShowProfileMenu={setShowProfileMenu}
           handleLogOut={handleLogOut}
         />

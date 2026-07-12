@@ -1,5 +1,7 @@
 // components/home/sidebar/ChatItem.jsx
 
+import { useState, useRef, useEffect } from "react";
+
 const ChatItem = ({
   chat,
   folders,
@@ -13,11 +15,71 @@ const ChatItem = ({
 
   handleChatDelete,
   handleMoveChat,
+  handleChatRename,
 }) => {
+  const [isEditing, setIsEditing] = useState(false);
+  const [editTitle, setEditTitle] = useState(chat.title);
+  const inputRef = useRef(null);
+  const isSaving = useRef(false);
+  const didCancel = useRef(false);
+
+  useEffect(() => {
+    setEditTitle(chat.title);
+  }, [chat.title]);
+
+  useEffect(() => {
+    if (isEditing && inputRef.current) {
+      inputRef.current.focus();
+      inputRef.current.select();
+    }
+  }, [isEditing]);
+
+  const startEditing = () => {
+    didCancel.current = false;
+    setEditTitle(chat.title);
+    setIsEditing(true);
+    toggleChatMenu(null);
+  };
+
+  const saveRename = async () => {
+    if (isSaving.current || didCancel.current) return;
+    const trimmed = editTitle.trim();
+    if (trimmed && trimmed !== chat.title) {
+      isSaving.current = true;
+      await handleChatRename(chat._id, trimmed);
+    } else {
+      setEditTitle(chat.title);
+    }
+    setIsEditing(false);
+    isSaving.current = false;
+  };
+
+  const handleKeyDown = (e) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      saveRename();
+    } else if (e.key === "Escape") {
+      e.preventDefault();
+      didCancel.current = true;
+      setIsEditing(false);
+      setEditTitle(chat.title);
+    }
+  };
+
+  const handleBlur = () => {
+    if (!didCancel.current && !isSaving.current) {
+      saveRename();
+    }
+  };
+
   return (
     <div
       className="flex flex-col item-center justify-between w-full rounded-lg bg-[#272727] gap-1 overflow-visible group/chat"
-      onClick={() => OpenChat(chat._id)}
+      onClick={() => {
+        if (!isEditing) {
+          OpenChat(chat._id);
+        }
+      }}
       onMouseLeave={() => {
         if (chatMenuId === chat._id) {
           toggleChatMenu(null);
@@ -27,7 +89,20 @@ const ChatItem = ({
       <div className="flex justify-between gap-2 overflow-visible">
         <div className="flex flex-1 items-center gap-2 p-2 overflow-hidden">
           <div className="flex items-center w-full">
-            <span className="truncate flex-1">{chat.title}</span>
+            {isEditing ? (
+              <input
+                ref={inputRef}
+                type="text"
+                value={editTitle}
+                onChange={(e) => setEditTitle(e.target.value)}
+                onKeyDown={handleKeyDown}
+                onBlur={handleBlur}
+                onClick={(e) => e.stopPropagation()}
+                className="w-full outline-none"
+              />
+            ) : (
+              <span className="truncate flex-1">{chat.title}</span>
+            )}
           </div>
         </div>
 
@@ -51,7 +126,13 @@ const ChatItem = ({
               onClick={(e) => e.stopPropagation()}
             >
               {/* Rename */}
-              <div className="px-3 py-1 rounded-lg hover:bg-[#323232]">
+              <div
+                className="px-3 py-1 rounded-lg hover:bg-[#323232] cursor-pointer"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  startEditing();
+                }}
+              >
                 Rename
               </div>
 
