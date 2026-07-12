@@ -39,7 +39,7 @@ const TitleBar = ({
             <img
               src="https://img.icons8.com/?size=100&id=bc20TOtEmtiP&format=png&color=000000"
               alt="Saved Prompts"
-              className="invert w-[20px] h-auto cursor-pointer"
+              className="saved-prompts-trigger invert w-[20px] h-auto cursor-pointer"
               onClick={() => setShowSavedPrompts(!showSavedPrompts)}
             />
 
@@ -48,6 +48,7 @@ const TitleBar = ({
                 savedPrompts={savedPrompts}
                 TogglePinPrompt={TogglePinPrompt}
                 DeletePrompt={DeletePrompt}
+                onClose={() => setShowSavedPrompts(false)}
               />
             )}
           </button>

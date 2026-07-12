@@ -41,6 +41,33 @@ const createFolder = async (req, res) => {
   }
 };
 
+const updateFolder = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.userId);
+
+    if (!user) return res.status(404).json({ error: "User not found" });
+
+    const { folderId, name, color } = req.body;
+    if (!folderId) return res.status(400).json({ error: "Folder ID is required" });
+    if (!name) return res.status(400).json({ error: "Folder name is required" });
+
+    const folder = await Folder.findOneAndUpdate(
+      { _id: folderId, userId: req.user.userId },
+      { name: name.trim(), color: color || "#ffffff" },
+      { new: true }
+    );
+
+    if (!folder) {
+      return res.status(404).json({ error: "Folder not found or not authorized" });
+    }
+
+    res.json({ message: "Folder Updated Successfully", folder });
+  } catch (err) {
+    console.error("Update folder error:", err);
+    res.status(500).json({ error: "Server error" });
+  }
+};
+
 const deleteFolder = async (req, res) => {
 
   try {
@@ -301,4 +328,30 @@ const deletePrompt = async (req, res) => {
   }
 };
 
-module.exports = { getCurrentUser, createFolder, deleteFolder, getUserFolders, getChat, moveChat, deleteChat, getUngroupedChats, savePrompt, getPrompts, togglePinPrompt, deletePrompt}; 
+const renameChat = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.userId);
+    if (!user) return res.status(404).json({ error: "User not found" });
+
+    const { chatId, title } = req.body;
+    if (!chatId) return res.status(400).json({ error: "Chat ID is required" });
+    if (!title || !title.trim()) return res.status(400).json({ error: "Chat title is required" });
+
+    const chat = await Chat.findOneAndUpdate(
+      { _id: chatId, userId: req.user.userId },
+      { title: title.trim() },
+      { new: true }
+    );
+
+    if (!chat) {
+      return res.status(404).json({ error: "Chat not found or not authorized" });
+    }
+
+    res.json({ message: "Chat Renamed Successfully", chat });
+  } catch (err) {
+    console.error("Rename chat error:", err);
+    res.status(500).json({ error: "Server error" });
+  }
+};
+
+module.exports = { getCurrentUser, createFolder, updateFolder, deleteFolder, getUserFolders, getChat, moveChat, deleteChat, getUngroupedChats, savePrompt, getPrompts, togglePinPrompt, deletePrompt, renameChat}; 

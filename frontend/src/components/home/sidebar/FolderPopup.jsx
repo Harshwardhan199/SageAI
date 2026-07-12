@@ -68,6 +68,7 @@ const FolderPopup = ({
 
   CreateFolderPopup,
   handleFolderCreate,
+  editingFolderId,
 }) => {
   if (!folderPopup) return null;
 
@@ -95,7 +96,7 @@ const FolderPopup = ({
 
           {/* Title */}
           <div className="flex justify-center w-full text-[20px]">
-            New Folder
+            {editingFolderId ? "Edit Folder" : "New Folder"}
           </div>
 
           {/* Folder Name */}
@@ -151,7 +152,7 @@ const FolderPopup = ({
               className="px-3 py-1 mt-[10px] rounded-lg bg-[#155dfc] text-[18px]"
               onClick={handleFolderCreate}
             >
-              Create
+              {editingFolderId ? "Save" : "Create"}
             </button>
           </div>
         </div>

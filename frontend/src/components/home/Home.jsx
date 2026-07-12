@@ -54,6 +54,7 @@ const Home = () => {
   const [folderPopup, setFolderPopup] = useState(false);
   const [folderName, setFolderName] = useState("");
   const [folderColor, setFolderColor] = useState("");
+  const [editingFolderId, setEditingFolderId] = useState(null);
 
   const refFoldersExpandBtn = useRef(null);
 
@@ -152,11 +153,22 @@ const Home = () => {
   const CreateFolderPopup = () => {
     setFolderName("");
     setFolderColor("");
+    setEditingFolderId(null);
     setFolderPopup(!folderPopup);
   };
 
-  // Folder Creation
+  // Customize/Edit Folder Popup Setup
+  const handleFolderCustomize = (folder) => {
+    setEditingFolderId(folder._id);
+    setFolderName(folder.name);
+    setFolderColor(folder.color);
+    setFolderPopup(true);
+    toggleFolderMenu(null);
+  };
+
+  // Folder Creation / Update
   const handleFolderCreate = async () => {
+    if (!folderName.trim()) return;
     const folderData = {
       name:
         folderName.charAt(0).toUpperCase() + folderName.slice(1).toLowerCase(),
@@ -164,17 +176,21 @@ const Home = () => {
       isPinned: false,
     };
 
-    //console.log(folderData);
-
     try {
-      await api.post("/user/createFolder", folderData, {
-        withCredentials: true,
-      });
-
-      //console.log("Folder Data: ", res.data);
+      if (editingFolderId) {
+        await api.post(
+          "/user/updateFolder",
+          { ...folderData, folderId: editingFolderId },
+          { withCredentials: true }
+        );
+      } else {
+        await api.post("/user/createFolder", folderData, {
+          withCredentials: true,
+        });
+      }
     } catch (error) {
       console.error(
-        "Error Creating Folder:",
+        editingFolderId ? "Error Updating Folder:" : "Error Creating Folder:",
         error.response?.data || error.message,
       );
       return null;
@@ -348,6 +364,26 @@ const Home = () => {
     }
 
     toggleChatMenu(null);
+    LoadChats();
+    LoadFolders();
+  };
+
+  // Rename Chat
+  const handleChatRename = async (chatId, title) => {
+    try {
+      await api.post(
+        "/user/renameChat",
+        { chatId, title },
+        { withCredentials: true },
+      );
+    } catch (error) {
+      console.error(
+        "Error Renaming Chat:",
+        error.response?.data || error.message,
+      );
+      return null;
+    }
+
     LoadChats();
     LoadFolders();
   };
@@ -716,11 +752,13 @@ const Home = () => {
           toggleFolderMenu={toggleFolderMenu}
           handleFolderDelete={handleFolderDelete}
           CreateFolderPopup={CreateFolderPopup}
+          handleFolderCustomize={handleFolderCustomize}
           ToggleChatList={ToggleChatList}
           OpenChat={OpenChat}
           toggleChatMenu={toggleChatMenu}
           handleChatDelete={handleChatDelete}
           handleMoveChat={handleMoveChat}
+          handleChatRename={handleChatRename}
           setShowProfileMenu={setShowProfileMenu}
           handleLogOut={handleLogOut}
         />
@@ -768,6 +806,7 @@ const Home = () => {
           setFolderColor={setFolderColor}
           CreateFolderPopup={CreateFolderPopup}
           handleFolderCreate={handleFolderCreate}
+          editingFolderId={editingFolderId}
         />
       </div>
     </>

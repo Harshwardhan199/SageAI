@@ -18,8 +18,10 @@ const FolderItem = ({
   handleFolderDelete,
   handleChatDelete,
   handleMoveChat,
+  handleChatRename,
 
   OpenChat,
+  handleFolderCustomize,
 }) => {
   const chatsCount = folder.chats.length;
 
@@ -75,8 +77,11 @@ const FolderItem = ({
                 className="menu-container absolute -left-[15px] top-full flex flex-col gap-1 p-1 bg-[#272727] border border-[#393939] drop-shadow rounded-lg z-10"
                 onClick={(e) => e.stopPropagation()}
               >
-                <div className="px-3 py-1 rounded-lg hover:bg-[#323232]">
-                  Customize
+                <div
+                  className="px-3 py-1 rounded-lg hover:bg-[#323232]"
+                  onClick={() => handleFolderCustomize(folder)}
+                >
+                  Edit
                 </div>
 
                 <div className="h-[1px] w-full bg-[#393939]" />
@@ -113,6 +118,7 @@ const FolderItem = ({
             OpenChat={OpenChat}
             handleChatDelete={handleChatDelete}
             handleMoveChat={handleMoveChat}
+            handleChatRename={handleChatRename}
           />
         ))}
       </div>

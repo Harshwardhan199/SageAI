@@ -2,18 +2,20 @@ const express = require("express");
 const router = express.Router();
 const authMiddleware = require("../middleware/authMiddleware");
 
-const { getCurrentUser, createFolder, deleteFolder, getUserFolders, getChat, moveChat, deleteChat, getUngroupedChats, savePrompt, getPrompts, togglePinPrompt, deletePrompt } = require("../controllers/userController");
+const { getCurrentUser, createFolder, updateFolder, deleteFolder, getUserFolders, getChat, moveChat, deleteChat, getUngroupedChats, savePrompt, getPrompts, togglePinPrompt, deletePrompt, renameChat } = require("../controllers/userController");
 const { chat, feedback } = require("../controllers/chatController");
 
 router.get("/me", authMiddleware, getCurrentUser); //get user
 
 router.post("/createFolder", authMiddleware, createFolder); //create folder
+router.post("/updateFolder", authMiddleware, updateFolder); //update folder
 router.get("/folders", authMiddleware, getUserFolders); //get folders
 router.post("/deleteFolder", authMiddleware, deleteFolder); //delete folder
 
 router.get("/chats", authMiddleware, getUngroupedChats); //get chats
 router.post("/moveChat", authMiddleware, moveChat); //move chat
 router.post("/deleteChat", authMiddleware, deleteChat); //delete chat
+router.post("/renameChat", authMiddleware, renameChat); //rename chat
 
 router.post("/getChat", authMiddleware, getChat); //load current chat
 
