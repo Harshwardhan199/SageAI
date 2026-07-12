@@ -25,6 +25,25 @@ const Message = forwardRef(({ sender, text, style, loadSavedPrompts }, ref) => {
 
   const [feedbackLoading, setFeedbackLoading] = useState(false);
 
+  const [copied, setCopied] = useState(false);
+  const [saved, setSaved] = useState(false);
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(text);
+    setCopied(true);
+    setTimeout(() => {
+      setCopied(false);
+    }, 1000);
+  };
+
+  const handleSave = async () => {
+    await SavePrompt(text);
+    setSaved(true);
+    setTimeout(() => {
+      setSaved(false);
+    }, 1000);
+  };
+
   const cleanText = (s) =>
     s
       .replace(/```[a-z]*\n?/gi, "")
@@ -93,7 +112,6 @@ const Message = forwardRef(({ sender, text, style, loadSavedPrompts }, ref) => {
   const SavePrompt = async (text) => {
     try {
       await api.post("/user/savePrompt", { text }, { withCredentials: true });
-      toast.success("Prompt saved!");
     } catch (error) {
       console.error("Error Saving Prompt:", error);
     }
@@ -588,13 +606,14 @@ const Message = forwardRef(({ sender, text, style, loadSavedPrompts }, ref) => {
             {/* Copy button */}
             <div
               className="w-7 h-7 flex items-center justify-center rounded-lg bg-[#1f1f1f] cursor-pointer"
-              onClick={() => {
-                navigator.clipboard.writeText(text);
-                toast.success("Copied!");
-              }}
+              onClick={handleCopy}
             >
               <img
-                src="https://img.icons8.com/?size=100&id=pNYOTp5DinZ3&format=png&color=ffffff"
+                src={
+                  copied
+                    ? "https://img.icons8.com/?size=100&id=98955&format=png&color=ffffff"
+                    : "https://img.icons8.com/?size=100&id=pNYOTp5DinZ3&format=png&color=ffffff"
+                }
                 alt="Copy"
                 className="w-4 h-4"
               />
@@ -604,10 +623,14 @@ const Message = forwardRef(({ sender, text, style, loadSavedPrompts }, ref) => {
             {user && (
               <div
                 className="w-7 h-7 flex items-center justify-center rounded-lg bg-[#1f1f1f] cursor-pointer"
-                onClick={() => SavePrompt(text)}
+                onClick={handleSave}
               >
                 <img
-                  src="https://img.icons8.com/?size=100&id=bc20TOtEmtiP&format=png&color=ffffff"
+                  src={
+                    saved
+                      ? "https://img.icons8.com/?size=100&id=98955&format=png&color=ffffff"
+                      : "https://img.icons8.com/?size=100&id=bc20TOtEmtiP&format=png&color=ffffff"
+                  }
                   alt="Saved prompts"
                   className="w-4 h-4"
                 />
