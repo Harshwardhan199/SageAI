@@ -23,17 +23,19 @@ export default function LoginSignup() {
       const email = data.email;
       const password = data.password;
 
-      const res = await axios.post(`${config.BACKEND_URL}/api/auth/signup`, { username, email, password });
+      const res = await axios.post(`${config.BACKEND_URL}/api/auth/signup`, {
+        username,
+        email,
+        password,
+      });
 
       updateAccessToken(res.data.accessToken);
       setUser(res.data.user);
 
       navigate("/");
-    }
-    catch (error) {
+    } catch (error) {
       console.error("Error signing up:", error);
     }
-
   };
 
   const handleLogin = async (e) => {
@@ -46,17 +48,19 @@ export default function LoginSignup() {
       const email = data.email;
       const password = data.password;
 
-      const res = await axios.post(`${config.BACKEND_URL}/api/auth/login`, { email, password }, { withCredentials: true });
+      const res = await axios.post(
+        `${config.BACKEND_URL}/api/auth/login`,
+        { email, password },
+        { withCredentials: true },
+      );
 
       updateAccessToken(res.data.accessToken);
       setUser(res.data.user);
 
       navigate("/");
-    }
-    catch (error) {
+    } catch (error) {
       console.error("Error logging in:", error);
     }
-
   };
 
   const handleGoogleLogin = async (e) => {
@@ -68,21 +72,24 @@ export default function LoginSignup() {
     }
 
     const client = window.google.accounts.oauth2.initCodeClient({
-      client_id: import.meta.env.VITE_REACT_APP_GOOGLE_CLIENT_ID,
+      client_id: config.GOOGLE_CLIENT_ID,
       scope: "openid email profile",
       ux_mode: "popup",
       callback: async (response) => {
         try {
           const { code } = response;
 
-          const res = await axios.post(`${config.BACKEND_URL}/api/auth/google`, { code }, { withCredentials: true });
+          const res = await axios.post(
+            `${config.BACKEND_URL}/api/auth/google`,
+            { code },
+            { withCredentials: true },
+          );
 
           updateAccessToken(res.data.accessToken);
 
           setUser(res.data.data);
 
           navigate("/");
-
         } catch (err) {
           console.error("Google login error:", err);
         }
@@ -94,15 +101,18 @@ export default function LoginSignup() {
 
   return (
     <div className="flex items-center justify-center w-screen h-screen bg-[#141414]">
-
       {/* {Main Container} */}
-      <div className={`relative w-[850px] h-[550px] bg-black m-5 rounded-4xl shadow-[0_0_30px_rgba(0,0,0,0.5)] overflow-hidden transition-all duration-600 ease-in-out`}>
-
+      <div
+        className={`relative w-[850px] h-[550px] bg-black m-5 rounded-4xl shadow-[0_0_30px_rgba(0,0,0,0.5)] overflow-hidden transition-all duration-600 ease-in-out`}
+      >
         {/* LOGIN FORM */}
-        <div className={`absolute w-1/2 h-full bg-black flex items-center text-center p-10 z-[1] transition-all duration-600 ease-in-out ${loginMode ? "right-1/2 opacity-100 pointer-events-auto" : "right-0 opacity-0 pointer-events-none"}`}>
-
+        <div
+          className={`absolute w-1/2 h-full bg-black flex items-center text-center p-10 z-[1] transition-all duration-600 ease-in-out ${loginMode ? "right-1/2 opacity-100 pointer-events-auto" : "right-0 opacity-0 pointer-events-none"}`}
+        >
           <form className="w-full" onSubmit={handleLogin}>
-            <h1 className="text-4xl text-white font-bold -mt-2 mb-2">Sign In</h1>
+            <h1 className="text-4xl text-white font-bold -mt-2 mb-2">
+              Sign In
+            </h1>
 
             {/* <input type="text" name="fakeuser1" autoComplete="username" style={{ display: "none" }} />
             <input type="password" name="fakepass1" autoComplete="current-password" style={{ display: "none" }} /> */}
@@ -115,7 +125,6 @@ export default function LoginSignup() {
                 autoComplete="off"
                 className="w-full py-[13px] pr-[50px] pl-5 bg-[#3a3a3a] rounded-lg text-lg text-white font-medium placeholder-[#7f8c8d] outline-none"
               />
-
 
               <i className="bx bxs-user absolute right-5 top-1/2 -translate-y-1/2 text-xl text-gray-500"></i>
             </div>
@@ -137,7 +146,9 @@ export default function LoginSignup() {
               </a>
             </div>
 
-            <button className="w-full h-12 bg-blue-500 rounded-lg shadow-md text-white font-semibold text-lg">Sign In</button>
+            <button className="w-full h-12 bg-blue-500 rounded-lg shadow-md text-white font-semibold text-lg">
+              Sign In
+            </button>
 
             <p className="text-[#bdc3c7] mt-4">or sign in with</p>
 
@@ -150,20 +161,27 @@ export default function LoginSignup() {
                   <i className={`bx bxl-${icon}`}></i>
                 </a>
               ))} */}
-              <div className="inline-flex items-center justify-center gap-2 w-full p-2 border-2 border-[#7f8c8d] rounded-lg text-2xl mx-2" onClick={handleGoogleLogin}>
+              <div
+                className="inline-flex items-center justify-center gap-2 w-full p-2 border-2 border-[#7f8c8d] rounded-lg text-2xl mx-2"
+                onClick={handleGoogleLogin}
+              >
                 <div className="bx bxl-google"></div>
-                <div className="text-xl overflow-hidden whitespace-nowrap">SignIn with Google</div>
+                <div className="text-xl overflow-hidden whitespace-nowrap">
+                  SignIn with Google
+                </div>
               </div>
             </div>
           </form>
-
         </div>
 
         {/* REGISTER FORM */}
-        <div className={`absolute right-0 w-1/2 h-full bg-black flex items-center text-center p-10 z-[1] transition-all duration-600 ease-in-out ${loginMode ? "opacity-0 pointer-events-none" : "opacity-100 pointer-events-auto"}`}>
-
+        <div
+          className={`absolute right-0 w-1/2 h-full bg-black flex items-center text-center p-10 z-[1] transition-all duration-600 ease-in-out ${loginMode ? "opacity-0 pointer-events-none" : "opacity-100 pointer-events-auto"}`}
+        >
           <form className="w-full" onSubmit={handleSignUp}>
-            <h1 className="text-4xl text-white font-bold -mt-2 mb-2">Sign Up</h1>
+            <h1 className="text-4xl text-white font-bold -mt-2 mb-2">
+              Sign Up
+            </h1>
 
             <div className="relative my-7">
               <input
@@ -198,7 +216,9 @@ export default function LoginSignup() {
               <i className="bx bxs-lock-alt absolute right-5 top-1/2 -translate-y-1/2 text-xl text-gray-500"></i>
             </div>
 
-            <button className="w-full h-12 bg-blue-500 rounded-lg shadow-md text-white font-semibold text-lg">Sign Up</button>
+            <button className="w-full h-12 bg-blue-500 rounded-lg shadow-md text-white font-semibold text-lg">
+              Sign Up
+            </button>
 
             <p className="text-[#bdc3c7] mt-4">or sign up with</p>
 
@@ -211,25 +231,30 @@ export default function LoginSignup() {
                   <i className={`bx bxl-${icon}`}></i>
                 </a>
               ))} */}
-              <div className="inline-flex items-center justify-center gap-2 w-full p-2 border-2 border-[#7f8c8d] rounded-lg text-2xl mx-2" onClick={handleGoogleLogin}>
+              <div
+                className="inline-flex items-center justify-center gap-2 w-full p-2 border-2 border-[#7f8c8d] rounded-lg text-2xl mx-2"
+                onClick={handleGoogleLogin}
+              >
                 <div className="bx bxl-google"></div>
-                <div className="text-xl overflow-hidden whitespace-nowrap">SignIn with Google</div>
+                <div className="text-xl overflow-hidden whitespace-nowrap">
+                  SignIn with Google
+                </div>
               </div>
             </div>
-
           </form>
-
         </div>
 
         {/* TOGGLE BOX */}
         <div className="absolute w-full h-full overflow-hidden">
-
           {/* BLUE SLIDING BACKGROUND */}
-          <div className={`absolute w-[300%] h-full bg-[#3B82F6] rounded-[150px] z-2 transition-all duration-1000 ease-in-out ${loginMode ? "left-[50%] " : "left-[-250%]"}`}></div>
+          <div
+            className={`absolute w-[300%] h-full bg-[#3B82F6] rounded-[150px] z-2 transition-all duration-1000 ease-in-out ${loginMode ? "left-[50%] " : "left-[-250%]"}`}
+          ></div>
 
           {/* LEFT PANEL */}
           <div
-            className={`absolute flex flex-col justify-center items-center w-1/2 h-full text-white z-3 transition-all duration-800 ease-in-out ${loginMode ? "left-[-50%] " : "left-0"}`}>
+            className={`absolute flex flex-col justify-center items-center w-1/2 h-full text-white z-3 transition-all duration-800 ease-in-out ${loginMode ? "left-[-50%] " : "left-0"}`}
+          >
             <h1 className="text-4xl font-bold">Good to See You !</h1>
             <p className="mb-5">Already have an account? LogIn</p>
             <button
@@ -242,7 +267,8 @@ export default function LoginSignup() {
 
           {/* RIGHT PANEL */}
           <div
-            className={`absolute flex flex-col justify-center items-center w-1/2 h-full text-white z-[3] transition-all duration-800 ease-in-out ${loginMode ? "right-0" : "right-[-50%]"}`}>
+            className={`absolute flex flex-col justify-center items-center w-1/2 h-full text-white z-[3] transition-all duration-800 ease-in-out ${loginMode ? "right-0" : "right-[-50%]"}`}
+          >
             <h1 className="text-4xl font-bold">Welcome !</h1>
             <p className="mb-5">Don't have an account? Create New</p>
             <button
@@ -252,11 +278,8 @@ export default function LoginSignup() {
               Sign Up
             </button>
           </div>
-
         </div>
-
       </div>
-
     </div>
   );
 }
