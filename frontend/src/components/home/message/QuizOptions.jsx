@@ -10,22 +10,24 @@ const QuizOptions = ({
   return (
     <>
       {quiz.options.map((option, index) => {
-        let borderClass = "border-[#2d2d2d] bg-[#171717] text-[#e2e2e2]";
+        let borderClass = "border-default bg-hover-bg text-primary";
 
         if (state.answered) {
           if (option === quiz.answer) {
-            borderClass = "border-[#10b981] bg-[#10b981]/15 text-[#10b981]";
+            borderClass = "border-emerald-500/70 bg-hover-bg text-emerald-600 dark:text-emerald-400 font-semibold";
           } else if (option === state.selectedOption) {
-            borderClass = "border-[#ef4444] bg-[#ef4444]/15 text-[#ef4444]";
+            borderClass = "border-red-500/70 bg-hover-bg text-red-600 dark:text-red-400 font-semibold";
+          } else {
+            borderClass = "border-default/50 bg-hover-bg text-secondary opacity-60";
           }
         } else if (state.selectedOption === option) {
-          borderClass = "border-[#155dfc] bg-[#155dfc]/10 text-white";
+          borderClass = "border-accent bg-accent/10 text-primary font-semibold";
         }
 
         return (
           <label
             key={index}
-            className={`flex items-center gap-3 p-3.5 rounded-lg border cursor-pointer hover:bg-[#252525] transition-all duration-150 select-none ${borderClass}`}
+            className={`flex items-center gap-3 p-3 sm:p-3.5 rounded-xl border cursor-pointer hover:bg-hover-bg transition-all duration-150 select-none ${borderClass}`}
           >
             <input
               type="radio"

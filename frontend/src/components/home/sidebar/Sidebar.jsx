@@ -1,5 +1,3 @@
-// components/home/sidebar/Sidebar.jsx
-
 import SidebarHeader from "./SidebarHeader";
 import FolderSection from "./FolderSection";
 import ChatSection from "./ChatSection";
@@ -59,19 +57,24 @@ const Sidebar = ({
 
   setShowProfileMenu,
   handleLogOut,
+  onOpenSettings,
 }) => {
   return (
-    <div className="fixed flex top-0 left-0 border-r border-r-[#151515] overflow-visible z-30">
+    <div
+      className={`fixed flex top-0 left-0 overflow-visible z-40 transition-transform duration-300 ease-in-out md:translate-x-0 ${
+        toggleSidebar ? "translate-x-0" : "-translate-x-full"
+      }`}
+    >
       <div
         ref={refSidebar}
         onMouseEnter={user ? handleMouseEnter : undefined}
         onMouseLeave={handleMouseLeave}
-        className={`flex flex-col h-screen items-center py-1 gap-3 bg-[#070707]
+        className={`flex flex-col h-screen items-center py-1 gap-3 bg-sidebar-bg border-r border-default
         ${
-          !toggleSidebar ? "w-[58px]" : "w-[301px]"
-        } text-white overflow-visible whitespace-nowrap transition-all duration-300 ease-in-out`}
+          !toggleSidebar ? "w-[301px] md:w-[58px]" : "w-[301px]"
+        } text-primary overflow-visible whitespace-nowrap transition-all duration-300 ease-in-out`}
       >
-        <div className="flex flex-col h-full w-full rounded-xl bg-[#070707] p-2 gap-1 overflow-visible">
+        <div className="flex flex-col h-full w-full rounded-xl bg-sidebar-bg p-2 gap-1 overflow-visible">
           {/* Logo + Collapse */}
           <SidebarHeader
             user={user}
@@ -86,7 +89,7 @@ const Sidebar = ({
           <div className="flex w-full mb-1">
             <div
               onClick={handleNewChat}
-              className="flex item-center gap-2 h-[40px] w-full rounded-lg bg-[#155dfc] p-2 text-white overflow-hidden whitespace-nowrap cursor-pointer"
+              className="flex items-center gap-2 h-[40px] w-full rounded-lg bg-accent hover:bg-accent-hover p-2 text-white overflow-hidden whitespace-nowrap cursor-pointer transition-colors shadow-sm"
             >
               <div className="flex items-center flex-shrink-0">
                 <img
@@ -98,7 +101,9 @@ const Sidebar = ({
 
               <div
                 className={`transition-all duration-200 ease-in-out ${
-                  !toggleSidebar ? "opacity-0" : "opacity-100"
+                  !toggleSidebar
+                    ? "opacity-0 md:hidden lg:block"
+                    : "opacity-100"
                 }`}
               >
                 New Chat
@@ -158,6 +163,7 @@ const Sidebar = ({
             showProfileMenu={showProfileMenu}
             setShowProfileMenu={setShowProfileMenu}
             handleLogOut={handleLogOut}
+            onOpenSettings={onOpenSettings}
           />
         </div>
       </div>

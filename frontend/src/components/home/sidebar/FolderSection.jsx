@@ -1,5 +1,3 @@
-// components/home/sidebar/FolderSection.jsx
-
 import FolderItem from "./FolderItem";
 
 const FolderSection = ({
@@ -32,29 +30,29 @@ const FolderSection = ({
   return (
     <>
       {/* Header */}
-      <div className="flex item-center justify-between w-full rounded-xl bg-[#070707] py-2 text-sm mt-[10px]">
+      <div className="flex items-center justify-between w-full rounded-xl bg-transparent py-2 text-sm mt-[10px] text-primary font-bold">
         <div>Folders</div>
 
-        <div className="flex item-center justify-center gap-1">
+        <div className="flex items-center justify-center gap-1">
           <button
-            className="h-[20px] rounded-md bg-[#272727] px-1 flex-shrink-0"
+            className="h-[20px] rounded-md bg-card-bg border border-default hover:bg-hover-bg px-1 flex-shrink-0 cursor-pointer"
             onClick={CreateFolderPopup}
           >
             <img
               src="https://img.icons8.com/?size=100&id=37784&format=png&color=000000"
               alt="Create Folder"
-              className="invert w-[10px] h-auto"
+              className="theme-icon-dark w-[10px] h-auto"
             />
           </button>
 
           <button
-            className="h-[20px] rounded-md bg-[#272727] px-1"
+            className="h-[20px] rounded-md bg-card-bg border border-default hover:bg-hover-bg px-1 cursor-pointer"
             onClick={ToggleFolderList}
           >
             <img
               src="https://img.icons8.com/?size=100&id=R52ioYgkCvz6&format=png&color=1A1A1A"
               alt="Expand"
-              className="invert w-[10px] h-auto transition-all duration-300"
+              className="theme-icon-dark w-[10px] h-auto transition-all duration-300"
               ref={refFoldersExpandBtn}
             />
           </button>
@@ -72,18 +70,18 @@ const FolderSection = ({
         {folders.length === 0 && (
           <div className="flex w-full mb-1">
             <div
-              className="flex item-center gap-2 h-[40px] w-full rounded-lg bg-[#1f1f1f] p-2 text-white overflow-hidden whitespace-nowrap cursor-pointer"
+              className="flex items-center gap-2 h-[40px] w-full rounded-lg bg-card-bg border border-default p-2 text-primary hover:bg-hover-bg overflow-hidden whitespace-nowrap cursor-pointer transition-colors duration-200"
               onClick={CreateFolderPopup}
             >
               <div className="flex items-center flex-shrink-0">
                 <img
                   src="https://img.icons8.com/?size=100&id=WDLQ4iMx1qkz&format=png&color=ffffff"
                   alt="Create Folder"
-                  className="w-[24px] h-auto"
+                  className="w-[24px] h-auto dark:invert-0 invert"
                 />
               </div>
 
-              <div>Create New Folder</div>
+              <div className="text-sm font-medium">Create New Folder</div>
             </div>
           </div>
         )}

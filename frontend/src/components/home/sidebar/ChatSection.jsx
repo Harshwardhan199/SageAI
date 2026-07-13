@@ -1,5 +1,3 @@
-// components/home/sidebar/ChatSection.jsx
-
 import ChatItem from "./ChatItem";
 
 const ChatSection = ({
@@ -29,21 +27,21 @@ const ChatSection = ({
       {/* Chats Header */}
       {chats.length > 0 && (
         <div
-          className={`flex item-center justify-between w-full rounded-xl bg-[#070707] py-2 text-sm transition-all duration-100 ease-in-out ${
+          className={`flex items-center justify-between w-full rounded-xl bg-transparent py-2 text-sm text-primary font-bold transition-all duration-100 ease-in-out ${
             showFolders ? "mt-[10px]" : "mt-[0px]"
           }`}
         >
           <div>Chats</div>
 
-          <div className="flex item-center justify-center gap-1">
+          <div className="flex items-center justify-center gap-1">
             <button
-              className="h-[20px] rounded-md bg-[#272727] px-1"
+              className="h-[20px] rounded-md bg-card-bg border border-default hover:bg-hover-bg px-1 cursor-pointer"
               onClick={ToggleChatList}
             >
               <img
                 src="https://img.icons8.com/?size=100&id=R52ioYgkCvz6&format=png&color=1A1A1A"
                 alt="Expand Chats"
-                className="invert w-[10px] h-auto transition-all duration-300"
+                className="theme-icon-dark w-[10px] h-auto transition-all duration-300"
                 ref={refChatsExpandBtn}
               />
             </button>

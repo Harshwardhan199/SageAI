@@ -1,5 +1,65 @@
 @import "tailwindcss";
 
+@theme {
+  --color-background: var(--background);
+  --color-primary: var(--text-primary);
+  --color-secondary: var(--text-secondary);
+  --color-default: var(--border-default);
+  --color-card-bg: var(--card-bg);
+  --color-sidebar-bg: var(--sidebar-bg);
+  --color-hover-bg: var(--hover-bg);
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+}
+
+:root {
+  --background: #f9f9f9;
+  --text-primary: #111111;
+  --text-secondary: #666666;
+  --border-default: #e5e7eb;
+  --card-bg: #ffffff;
+  --sidebar-bg: #f3f4f6;
+  --hover-bg: #e5e7eb;
+  --accent: #155dfc;
+  --accent-hover: #1d4ed8;
+}
+
+.dark {
+  --background: #000000;
+  --text-primary: #ffffff;
+  --text-secondary: #969696;
+  --border-default: #262626;
+  --card-bg: #161616;
+  --sidebar-bg: #070707;
+  --hover-bg: #222222;
+}
+
+/* Custom class for natively dark assets (stays dark on light theme, inverts to white on dark theme) */
+.theme-icon-dark {
+  filter: invert(0) !important;
+}
+.dark .theme-icon-dark {
+  filter: invert(1) !important;
+}
+
+/* Custom class for natively light/white assets (inverts to black on light theme, stays white on dark theme) */
+.theme-icon-light {
+  filter: invert(1) !important;
+}
+.dark .theme-icon-light {
+  filter: invert(0) !important;
+}
+
+/* Ensure smooth theme transitions on background and text colors */
+body {
+  background-color: var(--background);
+  color: var(--text-primary);
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+
+
+
 .custom-scrollbar {
   overflow-x: auto; 
   scrollbar-width: thin;

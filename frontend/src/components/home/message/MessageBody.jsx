@@ -3,9 +3,11 @@ import { parseBlocks } from "./utils/parseBlocks";
 import CodeBlock from "./CodeBlock";
 import QuizBlock from "./QuizBlock";
 import MarkdownBlock from "./MarkdownBlock";
+import useTheme from "../../../hooks/useTheme";
 
 const MessageBody = ({ message, isUser }) => {
   const { blocks } = message;
+  const { enableMarkdown, animateAI } = useTheme();
 
   if (isUser) {
     return blocks && blocks.length > 0 ? blocks[0].content : "";
@@ -32,7 +34,12 @@ const MessageBody = ({ message, isUser }) => {
               return b;
             });
             return (
-              <div key={index} className="chat-block mb-4 last:mb-0">
+              <div
+                key={index}
+                className={`chat-block mb-4 last:mb-0 ${
+                  animateAI ? "animate-[fadeIn_0.3s_ease-out_forwards]" : ""
+                }`}
+              >
                 {chatBlocks.map((b, idx) => {
                   if (b.type === "code") {
                     return (
@@ -43,7 +50,13 @@ const MessageBody = ({ message, isUser }) => {
                       />
                     );
                   } else if (b.type === "text") {
-                    return <MarkdownBlock key={idx} content={b.content} />;
+                    return enableMarkdown ? (
+                      <MarkdownBlock key={idx} content={b.content} />
+                    ) : (
+                      <div key={idx} className="whitespace-pre-wrap text-sm leading-relaxed text-primary">
+                        {b.content}
+                      </div>
+                    );
                   }
                   return null;
                 })}
