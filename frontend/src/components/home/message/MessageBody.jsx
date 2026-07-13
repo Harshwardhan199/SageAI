@@ -1,4 +1,5 @@
 import { parseBlocks } from "./utils/parseBlocks";
+import { extractQuiz } from "./utils/quizParser";
 
 import CodeBlock from "./CodeBlock";
 import QuizBlock from "./QuizBlock";
@@ -25,10 +26,20 @@ const MessageBody = ({ text, isUser }) => {
             );
 
           case "quiz":
+            let quizData = [];
+            try {
+              quizData = JSON.parse(block.content);
+            } catch (err) {
+              console.error("JSON.parse failed for quiz block:", err);
+              const extracted = extractQuiz(block.content);
+              if (extracted) {
+                quizData = extracted.quiz;
+              }
+            }
             return (
               <QuizBlock
                 key={index}
-                quizzes={JSON.parse(block.content)}
+                quizzes={quizData}
                 language={block.language}
                 showCode
                 className="flex flex-col gap-4 mb-2"
