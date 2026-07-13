@@ -46,7 +46,7 @@ const BotMessageActions = ({ message }) => {
     <div className="flex items-center justify-start gap-1 opacity-0 group-hover:opacity-100 transition-all duration-250 mt-1">
       {/* Copy */}
       <div
-        className="w-7 h-7 flex items-center justify-center rounded-lg bg-[#1f1f1f] cursor-pointer"
+        className="w-7 h-7 flex items-center justify-center rounded-lg bg-card-bg border border-default hover:bg-hover-bg cursor-pointer transition-colors shadow-sm"
         onClick={handleCopy}
         title="Copy response"
       >
@@ -57,7 +57,7 @@ const BotMessageActions = ({ message }) => {
               : "https://img.icons8.com/?size=100&id=pNYOTp5DinZ3&format=png&color=ffffff"
           }
           alt="Copy"
-          className="w-4 h-4"
+          className="w-4 h-4 theme-icon-light"
         />
       </div>
     </div>

@@ -32,16 +32,20 @@ const ChatArea = ({
   return (
     <>
       {/* Content */}
-      <div className="flex flex-col w-full flex-1 mt-[1px] items-center justify-center px-2 overflow-y-auto z-1">
+      <div className={`flex flex-col w-full flex-1 mt-[1px] items-center px-1 sm:px-2 z-1 min-h-0 ${
+        messages.length === 0 ? "justify-center" : "justify-start overflow-hidden"
+      }`}>
         <div
-          className={`flex max-w-[780px] w-full min-w-[600px] rounded-2xl overflow-hidden ${
-            messages.length === 0 ? "bg-[#161616]" : "h-full bg-transparent"
+          className={`flex max-w-[780px] w-full rounded-2xl overflow-hidden ${
+            messages.length === 0 ? "bg-card-bg border border-default" : "flex-1 min-h-0 bg-transparent"
           }`}
         >
           <div
             ref={containerRef}
-            className={`flex flex-col w-full px-2 pt-4 pb-2 overflow-y-auto ${
-              messages.length === 0 ? "items-center justify-start" : ""
+            className={`flex flex-col w-full px-2 pt-4 pb-2 ${
+              messages.length === 0
+                ? "items-center justify-start overflow-y-auto"
+                : "overflow-y-auto flex-1 custom-scrollbar"
             }`}
           >
             {/* Welcome */}
@@ -85,9 +89,9 @@ const ChatArea = ({
 
       {/* Sticky Input */}
       {messages.length > 0 && (
-        <div className="sticky bottom-0 flex flex-col items-center w-full h-17 bg-black z-2">
+        <div className="sticky bottom-0 flex flex-col items-center w-full h-17 bg-background z-2 px-3">
           <div className="relative flex justify-center w-full">
-            <div className="absolute -top-2 max-w-[780px] w-full min-w-[600px]">
+            <div className="absolute -top-2 max-w-[780px] w-full">
               <PromptInput
                 promptText={promptText}
                 setPromptText={setPromptText}
@@ -101,7 +105,7 @@ const ChatArea = ({
               />
             </div>
 
-            <div className="absolute top-10 text-[12px] text-white">
+            <div className="absolute top-10 text-[10px] text-secondary font-medium">
               SageAI can make mistakes. Check important info.
             </div>
           </div>

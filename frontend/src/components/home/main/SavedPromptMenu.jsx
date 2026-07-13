@@ -1,8 +1,11 @@
-// components/home/main/SavedPromptMenu.jsx
-
 import { useState, useEffect, useRef } from "react";
 
-const SavedPromptMenu = ({ savedPrompts, TogglePinPrompt, DeletePrompt, onClose }) => {
+const SavedPromptMenu = ({
+  savedPrompts,
+  TogglePinPrompt,
+  DeletePrompt,
+  onClose,
+}) => {
   const [copiedPromptId, setCopiedPromptId] = useState(null);
   const menuRef = useRef(null);
 
@@ -32,24 +35,26 @@ const SavedPromptMenu = ({ savedPrompts, TogglePinPrompt, DeletePrompt, onClose 
   return (
     <div
       ref={menuRef}
-      className="absolute right-0 top-[calc(100%+4px)] flex flex-col min-w-40 max-w-60 gap-1 text-left rounded-lg bg-[#141414] border-2 border-[#212121] drop-shadow"
+      className="absolute right-0 top-[calc(100%+8px)] flex flex-col w-64 sm:w-72 gap-1 text-left rounded-2xl bg-card-bg border border-default shadow-2xl z-30 text-primary transition-all duration-200"
     >
       {/* Header */}
-      <div className="font-bold mt-2 ml-2 text-center">Saved Prompts</div>
+      <div className="font-bold py-3 text-center text-[10px] tracking-widest text-secondary uppercase select-none">
+        Saved Prompts
+      </div>
 
-      <div className="w-full h-[1px] bg-gray-300" />
+      <div className="w-full h-[1px] bg-default" />
 
       {savedPrompts.length > 0 ? (
         <>
           {/* Prompt List */}
-          <div className="flex flex-col flex-1 min-h-30">
+          <div className="flex flex-col flex-1 py-1 max-h-[240px] overflow-y-auto custom-scrollbar">
             {savedPrompts.map((promptData) => (
               <div
                 key={promptData._id}
-                className="flex items-center justify-between gap-2 px-2 py-1 hover:bg-[#191919]"
+                className="flex items-center justify-between gap-3 px-4 py-2.5 hover:bg-hover-bg transition-colors"
               >
-                {/* Left */}
-                <div className="flex items-center gap-2 min-w-0">
+                {/* Left (flex-1 to push the right-side options) */}
+                <div className="flex items-center gap-3 flex-1 min-w-0">
                   <img
                     src={
                       promptData.isPinned
@@ -57,17 +62,17 @@ const SavedPromptMenu = ({ savedPrompts, TogglePinPrompt, DeletePrompt, onClose 
                         : "https://img.icons8.com/?size=100&id=104&format=png&color=ffffff"
                     }
                     alt="Pin"
-                    className="shrink-0 w-3 h-3 cursor-pointer"
+                    className="shrink-0 w-3.5 h-3.5 cursor-pointer theme-icon-light hover:scale-115 transition-transform duration-200"
                     onClick={() => TogglePinPrompt(promptData._id)}
                   />
 
-                  <div className="flex-1 min-w-0 overflow-hidden whitespace-nowrap truncate">
+                  <div className="flex-1 min-w-0 overflow-hidden whitespace-nowrap truncate text-xs font-semibold text-primary">
                     {promptData.text}
                   </div>
                 </div>
 
                 {/* Right */}
-                <div className="flex items-center gap-1 shrink-0">
+                <div className="flex items-center gap-2 shrink-0">
                   <img
                     src={
                       copiedPromptId === promptData._id
@@ -75,30 +80,24 @@ const SavedPromptMenu = ({ savedPrompts, TogglePinPrompt, DeletePrompt, onClose 
                         : "https://img.icons8.com/?size=100&id=pNYOTp5DinZ3&format=png&color=ffffff"
                     }
                     alt="Copy"
-                    className="shrink-0 w-4 h-4 cursor-pointer"
+                    className="shrink-0 w-4 h-4 cursor-pointer theme-icon-light hover:scale-115 transition-transform duration-200"
                     onClick={() => handleCopy(promptData._id, promptData.text)}
                   />
 
                   <img
                     src="https://img.icons8.com/?size=100&id=14237&format=png&color=ffffff"
                     alt="Delete"
-                    className="shrink-0 w-4 h-4 cursor-pointer"
+                    className="shrink-0 w-4 h-4 cursor-pointer theme-icon-light hover:scale-115 transition-transform duration-200"
                     onClick={() => DeletePrompt(promptData._id)}
                   />
                 </div>
               </div>
             ))}
           </div>
-
-          {/* <div className="w-full h-[1px] bg-gray-300" />
-
-          <div className="ml-2 mr-2 mb-2 text-sm text-center cursor-pointer hover:text-gray-300">
-            Manage all
-          </div> */}
         </>
       ) : (
         <div className="flex items-center justify-center min-h-30">
-          <div className="text-center mb-1">No Prompts saved</div>
+          <div className="text-center mb-1 text-xs text-secondary font-medium select-none">No Prompts saved</div>
         </div>
       )}
     </div>

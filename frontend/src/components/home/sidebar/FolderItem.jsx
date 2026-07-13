@@ -1,5 +1,3 @@
-// components/home/sidebar/FolderItem.jsx
-
 import ChatItem from "./ChatItem";
 
 const FolderItem = ({
@@ -41,8 +39,8 @@ const FolderItem = ({
           }
         }}
       >
-        <div className="flex item-center justify-between ml-[5px] rounded-r-lg bg-[#1f1f1f] overflow-visible">
-          <div className="flex gap-2 p-2">
+        <div className="flex items-center justify-between ml-[5px] rounded-r-lg bg-card-bg border border-default border-l-0 text-primary hover:bg-hover-bg transition-all duration-200 overflow-visible cursor-pointer">
+          <div className="flex gap-2 p-2.5">
             <div className="flex items-center">
               <img
                 src={
@@ -51,11 +49,11 @@ const FolderItem = ({
                     : "https://img.icons8.com/?size=100&id=82843&format=png&color=cccccc"
                 }
                 alt="Folder"
-                className="w-[20px] h-auto flex-shrink-0"
+                className="w-[20px] h-auto flex-shrink-0 theme-icon-light"
               />
             </div>
 
-            <div>{folder.name}</div>
+            <div className="text-sm font-semibold">{folder.name}</div>
           </div>
 
           {/* Folder Menu */}
@@ -69,25 +67,25 @@ const FolderItem = ({
             <img
               src="https://img.icons8.com/?size=100&id=102729&format=png&color=dddddd"
               alt="Options"
-              className="options-button w-[14px] h-auto flex-shrink-0 mx-2"
+              className="options-button w-[14px] h-auto flex-shrink-0 mx-2 dark:invert-0 invert"
             />
 
             {folderMenuId === folder._id && (
               <div
-                className="menu-container absolute -left-[15px] top-full flex flex-col gap-1 p-1 bg-[#272727] border border-[#393939] drop-shadow rounded-lg z-10"
+                className="menu-container absolute -left-[15px] top-full flex flex-col gap-1 p-1 bg-card-bg border border-default drop-shadow rounded-lg z-10 text-primary"
                 onClick={(e) => e.stopPropagation()}
               >
                 <div
-                  className="px-3 py-1 rounded-lg hover:bg-[#323232]"
+                  className="px-3 py-1 text-xs rounded-lg hover:bg-hover-bg font-medium"
                   onClick={() => handleFolderCustomize(folder)}
                 >
                   Edit
                 </div>
 
-                <div className="h-[1px] w-full bg-[#393939]" />
+                <div className="h-[1px] w-full bg-default/80 dark:bg-zinc-700/80" />
 
                 <div
-                  className="px-3 py-1 rounded-lg hover:bg-[#323232] text-red-600"
+                  className="px-3 py-1 text-xs rounded-lg hover:bg-hover-bg text-red-600 font-semibold"
                   onClick={() => handleFolderDelete(folder._id)}
                 >
                   Delete

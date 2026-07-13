@@ -11,13 +11,18 @@ import FolderPopup from "./sidebar/FolderPopup";
 import TitleBar from "./main/TitleBar";
 import ChatArea from "./main/ChatArea";
 import Message from "./message/Message";
+import SettingsPanel from "../settings/SettingsPanel";
 
 const Home = () => {
   const navigate = useNavigate();
 
   // User
-  const { accessToken, setAccessToken, user, setUser } = useAuth();
+  const { accessToken, clearAuth, user, setUser } = useAuth();
   const [username, setUsername] = useState("");
+
+  // Settings Panel
+  const [showSettings, setShowSettings] = useState(false);
+
 
   // Sidebar Toggle
   const refSidebar = useRef(null);
@@ -441,6 +446,9 @@ const Home = () => {
 
   // Open Chat
   const OpenChat = async (chatId) => {
+    if (window.innerWidth < 768) {
+      setToggleSidebar(false);
+    }
     //console.log(chatId);
 
     setCurrentChat(chatId);
@@ -511,6 +519,9 @@ const Home = () => {
 
   // New Chat
   const handleNewChat = async () => {
+    if (window.innerWidth < 768) {
+      setToggleSidebar(false);
+    }
     setCurrentChat("");
     setMessages([]);
   };
@@ -763,20 +774,24 @@ const Home = () => {
   // Logout
   const handleLogOut = async () => {
     if (user) {
-      await axios.post(
-        `${config.BACKEND_URL}/api/auth/logout`,
-        {},
-        {
-          headers: { Authorization: `Bearer ${accessToken}` },
-          withCredentials: true,
-        },
-      );
+      try {
+        await axios.post(
+          `${config.BACKEND_URL}/api/auth/logout`,
+          {},
+          {
+            headers: { Authorization: `Bearer ${accessToken}` },
+            withCredentials: true,
+          },
+        );
+      } catch (err) {
+        console.error("Error during API logout:", err);
+      }
 
-      setAccessToken(null);
-      setUser(null);
+      clearAuth();
     }
 
-    navigate("/loginSignUp");
+    // Force a full page refresh on redirect to clear all react states/memory
+    window.location.href = "/";
   };
 
   const lastUserIndex = messages.map((m) => m.sender).lastIndexOf("user");
@@ -784,7 +799,15 @@ const Home = () => {
 
   return (
     <>
-      <div className="flex min-h-screen bg-[#151515]">
+      <div className="flex min-h-screen bg-background text-primary">
+        {/* Mobile Sidebar backdrop */}
+        {toggleSidebar && (
+          <div
+            className="fixed inset-0 bg-black/60 backdrop-blur-xs z-35 md:hidden"
+            onClick={() => setToggleSidebar(false)}
+          />
+        )}
+
         <Sidebar
           // User
           user={user}
@@ -830,12 +853,13 @@ const Home = () => {
           handleChatRename={handleChatRename}
           setShowProfileMenu={setShowProfileMenu}
           handleLogOut={handleLogOut}
+          onOpenSettings={() => setShowSettings(true)}
         />
 
         <div
-          className={`relative flex flex-1 flex-col items-center justify-center min-h-screen bg-black ${
-            !toggleSidebar ? "ml-[58px]" : "ml-[301px]"
-          } transition-all duration-300 ease-in-out`}
+          className={`relative flex flex-col min-h-screen bg-background ${
+            !toggleSidebar ? "ml-0 md:ml-[58px]" : "ml-0 md:ml-[301px]"
+          } transition-all duration-300 ease-in-out w-full`}
         >
           <TitleBar
             user={user}
@@ -847,6 +871,7 @@ const Home = () => {
             handleLogOut={handleLogOut}
             selectedModel={selectedModel}
             setSelectedModel={setSelectedModel}
+            onToggleSidebar={() => setToggleSidebar(!toggleSidebar)}
           />
 
           <ChatArea
@@ -870,6 +895,7 @@ const Home = () => {
             setSelectedImage={setSelectedImage}
             selectedAudio={selectedAudio}
             setSelectedAudio={setSelectedAudio}
+            toggleSidebar={toggleSidebar}
           />
         </div>
 
@@ -883,9 +909,13 @@ const Home = () => {
           handleFolderCreate={handleFolderCreate}
           editingFolderId={editingFolderId}
         />
+
+        {/* Global Settings Panel Modal */}
+        <SettingsPanel isOpen={showSettings} onClose={() => setShowSettings(false)} />
       </div>
     </>
   );
 };
 
 export default Home;
+

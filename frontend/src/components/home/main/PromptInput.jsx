@@ -1,5 +1,3 @@
-// components/home/main/PromptInput.jsx
-
 const PromptInput = ({
   promptText,
   setPromptText,
@@ -36,7 +34,7 @@ const PromptInput = ({
   };
 
   return (
-    <div className="relative w-full rounded-lg bg-white text-black shadow-lg border border-gray-200">
+    <div className="relative w-full rounded-xl bg-[#fafafa] dark:bg-[#0d0d0d] text-primary shadow-lg border border-default dark:border-zinc-700 transition-all duration-200">
       {/* Hidden File Inputs */}
       <input
         type="file"
@@ -55,9 +53,9 @@ const PromptInput = ({
 
       {/* File Previews */}
       {(selectedImage || selectedAudio) && (
-        <div className="flex flex-wrap gap-3 p-3 bg-gray-50 border-b border-gray-100 rounded-t-lg">
+        <div className="flex flex-wrap gap-2 p-2 bg-hover-bg/30 border-b border-default rounded-t-xl">
           {selectedImage && (
-            <div className="relative w-16 h-16 border border-gray-200 rounded-lg overflow-hidden group bg-gray-100 shadow-sm">
+            <div className="relative w-14 h-14 border border-default rounded-lg overflow-hidden group bg-hover-bg shadow-sm">
               <img
                 src={selectedImage}
                 alt="Preview"
@@ -73,8 +71,8 @@ const PromptInput = ({
             </div>
           )}
           {selectedAudio && (
-            <div className="relative flex items-center gap-2 p-2 px-3 border border-gray-200 rounded-lg bg-gray-100 shadow-sm text-xs max-w-xs">
-              <span className="text-[11px] text-gray-700 font-medium truncate max-w-[120px]">
+            <div className="relative flex items-center gap-2 p-1.5 px-2.5 border border-default rounded-lg bg-hover-bg shadow-sm text-xs max-w-xs">
+              <span className="text-[11px] text-primary font-medium truncate max-w-[120px]">
                 🎵 Audio Attached
               </span>
               <button
@@ -94,13 +92,13 @@ const PromptInput = ({
         {/* File Input Trigger */}
         <div
           onClick={() => document.getElementById("image-upload").click()}
-          className="absolute left-2.5 hover:bg-gray-300 p-1.5 rounded-lg cursor-pointer transition-colors"
+          className="absolute left-2 hover:bg-hover-bg p-2 rounded-lg cursor-pointer transition-colors"
         >
           <div className="flex justify-center items-center w-full h-full">
             <img
               src="https://img.icons8.com/?size=100&id=354k6pS0PoMI&format=png&color=1A1A1A"
               alt="File Input"
-              className="w-[18px] h-auto"
+              className="w-[18px] h-auto dark:invert invert-0"
             />
           </div>
         </div>
@@ -109,7 +107,7 @@ const PromptInput = ({
         <input
           type="text"
           placeholder="Ask Anything..."
-          className="h-[44px] w-full pl-11 pr-20 outline-none rounded-lg text-sm bg-transparent"
+          className="h-[44px] w-full pl-10 pr-24 outline-none rounded-xl text-xs sm:text-sm bg-transparent text-black dark:text-white placeholder:text-secondary"
           value={promptText}
           onChange={(e) => setPromptText(e.target.value)}
           onKeyDown={onHitEnter}
@@ -119,24 +117,24 @@ const PromptInput = ({
         {/* Audio Input Trigger */}
         <div
           onClick={() => document.getElementById("audio-upload").click()}
-          className="absolute right-11 hover:bg-gray-100 p-1.5 rounded-lg cursor-pointer transition-colors"
+          className="absolute right-12 hover:bg-hover-bg p-2 rounded-lg cursor-pointer transition-colors"
         >
           <img
             src="https://img.icons8.com/?size=100&id=jkqQE2I90I8R&format=png&color=1A1A1A"
             alt="Attachment"
-            className="w-[18px] h-auto"
+            className="w-[18px] h-auto dark:invert invert-0"
           />
         </div>
 
         {/* Send Button */}
         <div
           onClick={handlePrompt}
-          className="absolute right-2 bg-blue-600 hover:bg-blue-700 p-1.5 rounded-lg cursor-pointer shadow-md transition-colors"
+          className="absolute right-2 bg-accent hover:bg-accent-hover p-2 rounded-lg cursor-pointer shadow-md transition-colors"
         >
           <img
             src="https://img.icons8.com/?size=100&id=7789&format=png&color=ffffff"
             alt="Send Prompt"
-            className="w-[18px] h-auto"
+            className="w-[16px] h-auto"
           />
         </div>
       </div>

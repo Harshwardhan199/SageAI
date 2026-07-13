@@ -100,152 +100,165 @@ export default function LoginSignup() {
   };
 
   return (
-    <div className="flex items-center justify-center w-screen h-screen bg-[#141414]">
+    <div className="flex items-center justify-center min-h-screen w-full bg-[#141414] p-4 text-white">
       {/* {Main Container} */}
       <div
-        className={`relative w-[850px] h-[550px] bg-black m-5 rounded-4xl shadow-[0_0_30px_rgba(0,0,0,0.5)] overflow-hidden transition-all duration-600 ease-in-out`}
+        className={`relative w-full max-w-md md:max-w-[850px] h-[550px] bg-black rounded-3xl md:rounded-4xl shadow-[0_0_30px_rgba(0,0,0,0.5)] overflow-hidden transition-all duration-600 ease-in-out`}
       >
         {/* LOGIN FORM */}
         <div
-          className={`absolute w-1/2 h-full bg-black flex items-center text-center p-10 z-[1] transition-all duration-600 ease-in-out ${loginMode ? "right-1/2 opacity-100 pointer-events-auto" : "right-0 opacity-0 pointer-events-none"}`}
+          className={`absolute w-full md:w-1/2 h-full bg-black flex items-center text-center p-6 sm:p-10 z-[1] transition-all duration-600 ease-in-out ${
+            loginMode
+              ? "left-0 opacity-100 pointer-events-auto"
+              : "left-full md:left-0 opacity-0 pointer-events-none"
+          }`}
         >
           <form className="w-full" onSubmit={handleLogin}>
-            <h1 className="text-4xl text-white font-bold -mt-2 mb-2">
+            <h1 className="text-3xl sm:text-4xl text-white font-bold -mt-2 mb-2">
               Sign In
             </h1>
 
-            {/* <input type="text" name="fakeuser1" autoComplete="username" style={{ display: "none" }} />
-            <input type="password" name="fakepass1" autoComplete="current-password" style={{ display: "none" }} /> */}
-
-            <div className="relative my-7">
+            <div className="relative my-6 sm:my-7">
               <input
                 type="text"
                 name="email"
                 placeholder="Email"
                 autoComplete="off"
-                className="w-full py-[13px] pr-[50px] pl-5 bg-[#3a3a3a] rounded-lg text-lg text-white font-medium placeholder-[#7f8c8d] outline-none"
+                required
+                className="w-full py-[11px] sm:py-[13px] pr-[50px] pl-5 bg-[#3a3a3a] rounded-lg text-base sm:text-lg text-white font-medium placeholder-[#7f8c8d] outline-none"
               />
-
               <i className="bx bxs-user absolute right-5 top-1/2 -translate-y-1/2 text-xl text-gray-500"></i>
             </div>
 
-            <div className="relative my-7">
+            <div className="relative my-6 sm:my-7">
               <input
                 type="password"
                 name="password"
                 placeholder="Password"
                 required
-                className="w-full py-[13px] pr-[50px] pl-5 bg-[#3a3a3a] rounded-lg text-lg text-white placeholder-[#7f8c8d] outline-none"
+                className="w-full py-[11px] sm:py-[13px] pr-[50px] pl-5 bg-[#3a3a3a] rounded-lg text-base sm:text-lg text-white placeholder-[#7f8c8d] outline-none"
               />
               <i className="bx bxs-lock-alt absolute right-5 top-1/2 -translate-y-1/2 text-xl text-gray-500"></i>
             </div>
 
             <div className="-mt-4 mb-4">
-              <a href="#" className="text-sm text-white">
+              <a href="#" className="text-xs sm:text-sm text-white">
                 Reset Password ?
               </a>
             </div>
 
-            <button className="w-full h-12 bg-blue-500 rounded-lg shadow-md text-white font-semibold text-lg">
+            <button className="w-full h-11 sm:h-12 bg-blue-500 rounded-lg shadow-md text-white font-semibold text-base sm:text-lg cursor-pointer hover:bg-blue-600 transition-colors">
               Sign In
             </button>
 
-            <p className="text-[#bdc3c7] mt-4">or sign in with</p>
+            <p className="text-[#bdc3c7] mt-4 text-xs sm:text-sm">or sign in with</p>
 
             <div className="flex justify-center mt-2 text-white">
-              {/* {["google", "facebook", "github", "linkedin"].map((icon) => (
-                <a
-                  key={icon}
-                  className="inline-flex p-2 border-2 border-[#7f8c8d] rounded-lg text-2xl mx-2"
-                >
-                  <i className={`bx bxl-${icon}`}></i>
-                </a>
-              ))} */}
               <div
-                className="inline-flex items-center justify-center gap-2 w-full p-2 border-2 border-[#7f8c8d] rounded-lg text-2xl mx-2"
+                className="inline-flex items-center justify-center gap-2 w-full p-2 border-2 border-[#7f8c8d] rounded-lg text-xl sm:text-2xl mx-2 cursor-pointer hover:bg-white/5 transition-colors"
                 onClick={handleGoogleLogin}
               >
                 <div className="bx bxl-google"></div>
-                <div className="text-xl overflow-hidden whitespace-nowrap">
+                <div className="text-sm sm:text-xl overflow-hidden whitespace-nowrap font-medium">
                   SignIn with Google
                 </div>
               </div>
+            </div>
+
+            {/* Mobile View Toggle Link */}
+            <div className="mt-6 text-xs sm:text-sm text-[#bdc3c7] md:hidden">
+              Don't have an account?{" "}
+              <button
+                type="button"
+                className="text-blue-400 font-bold underline cursor-pointer"
+                onClick={() => setLoginMode(false)}
+              >
+                Sign Up
+              </button>
             </div>
           </form>
         </div>
 
         {/* REGISTER FORM */}
         <div
-          className={`absolute right-0 w-1/2 h-full bg-black flex items-center text-center p-10 z-[1] transition-all duration-600 ease-in-out ${loginMode ? "opacity-0 pointer-events-none" : "opacity-100 pointer-events-auto"}`}
+          className={`absolute w-full md:w-1/2 h-full bg-black flex items-center text-center p-6 sm:p-10 z-[1] transition-all duration-600 ease-in-out ${
+            !loginMode
+              ? "right-0 opacity-100 pointer-events-auto"
+              : "right-full md:right-0 opacity-0 pointer-events-none"
+          }`}
         >
           <form className="w-full" onSubmit={handleSignUp}>
-            <h1 className="text-4xl text-white font-bold -mt-2 mb-2">
+            <h1 className="text-3xl sm:text-4xl text-white font-bold -mt-2 mb-2">
               Sign Up
             </h1>
 
-            <div className="relative my-7">
+            <div className="relative my-5 sm:my-6">
               <input
                 type="text"
                 name="username"
                 placeholder="Username"
                 required
-                className="w-full py-[13px] pr-[50px] pl-5 bg-[#3a3a3a] rounded-lg text-lg text-white placeholder-[#7f8c8d] outline-none"
+                className="w-full py-[11px] sm:py-[13px] pr-[50px] pl-5 bg-[#3a3a3a] rounded-lg text-base sm:text-lg text-white placeholder-[#7f8c8d] outline-none"
               />
               <i className="bx bxs-user absolute right-5 top-1/2 -translate-y-1/2 text-xl text-gray-500"></i>
             </div>
 
-            <div className="relative my-7">
+            <div className="relative my-5 sm:my-6">
               <input
                 type="email"
                 name="email"
                 placeholder="Email Address"
                 required
-                className="w-full py-[13px] pr-[50px] pl-5 bg-[#3a3a3a] rounded-lg text-lg text-white placeholder-[#7f8c8d] outline-none"
+                className="w-full py-[11px] sm:py-[13px] pr-[50px] pl-5 bg-[#3a3a3a] rounded-lg text-base sm:text-lg text-white placeholder-[#7f8c8d] outline-none"
               />
               <i className="bx bxs-envelope absolute right-5 top-1/2 -translate-y-1/2 text-xl text-gray-500"></i>
             </div>
 
-            <div className="relative my-7">
+            <div className="relative my-5 sm:my-6">
               <input
                 type="password"
                 name="password"
                 placeholder="Create Password"
                 required
-                className="w-full py-[13px] pr-[50px] pl-5 bg-[#3a3a3a] rounded-lg text-lg text-white placeholder-[#7f8c8d] outline-none"
+                className="w-full py-[11px] sm:py-[13px] pr-[50px] pl-5 bg-[#3a3a3a] rounded-lg text-base sm:text-lg text-white placeholder-[#7f8c8d] outline-none"
               />
               <i className="bx bxs-lock-alt absolute right-5 top-1/2 -translate-y-1/2 text-xl text-gray-500"></i>
             </div>
 
-            <button className="w-full h-12 bg-blue-500 rounded-lg shadow-md text-white font-semibold text-lg">
+            <button className="w-full h-11 sm:h-12 bg-blue-500 rounded-lg shadow-md text-white font-semibold text-base sm:text-lg cursor-pointer hover:bg-blue-600 transition-colors">
               Sign Up
             </button>
 
-            <p className="text-[#bdc3c7] mt-4">or sign up with</p>
+            <p className="text-[#bdc3c7] mt-3 text-xs sm:text-sm">or sign up with</p>
 
             <div className="flex justify-center mt-2 text-white">
-              {/* {["google", "facebook", "github", "linkedin"].map((icon) => (
-                <a
-                  key={icon}
-                  className="inline-flex p-2 border-2 border-[#7f8c8d] rounded-lg text-2xl mx-2"
-                >
-                  <i className={`bx bxl-${icon}`}></i>
-                </a>
-              ))} */}
               <div
-                className="inline-flex items-center justify-center gap-2 w-full p-2 border-2 border-[#7f8c8d] rounded-lg text-2xl mx-2"
+                className="inline-flex items-center justify-center gap-2 w-full p-2 border-2 border-[#7f8c8d] rounded-lg text-xl sm:text-2xl mx-2 cursor-pointer hover:bg-white/5 transition-colors"
                 onClick={handleGoogleLogin}
               >
                 <div className="bx bxl-google"></div>
-                <div className="text-xl overflow-hidden whitespace-nowrap">
+                <div className="text-sm sm:text-xl overflow-hidden whitespace-nowrap font-medium">
                   SignIn with Google
                 </div>
               </div>
+            </div>
+
+            {/* Mobile View Toggle Link */}
+            <div className="mt-5 text-xs sm:text-sm text-[#bdc3c7] md:hidden">
+              Already have an account?{" "}
+              <button
+                type="button"
+                className="text-blue-400 font-bold underline cursor-pointer"
+                onClick={() => setLoginMode(true)}
+              >
+                Sign In
+              </button>
             </div>
           </form>
         </div>
 
         {/* TOGGLE BOX */}
-        <div className="absolute w-full h-full overflow-hidden">
+        <div className="absolute w-full h-full overflow-hidden hidden md:block">
           {/* BLUE SLIDING BACKGROUND */}
           <div
             className={`absolute w-[300%] h-full bg-[#3B82F6] rounded-[150px] z-2 transition-all duration-1000 ease-in-out ${loginMode ? "left-[50%] " : "left-[-250%]"}`}
@@ -258,7 +271,7 @@ export default function LoginSignup() {
             <h1 className="text-4xl font-bold">Good to See You !</h1>
             <p className="mb-5">Already have an account? LogIn</p>
             <button
-              className="w-40 h-12 bg-transparent border-2 border-white text-white font-semibold rounded-lg"
+              className="w-40 h-12 bg-transparent border-2 border-white text-white font-semibold rounded-lg cursor-pointer hover:bg-white hover:text-blue-500 transition-all"
               onClick={() => setLoginMode(true)}
             >
               Sign In
@@ -272,7 +285,7 @@ export default function LoginSignup() {
             <h1 className="text-4xl font-bold">Welcome !</h1>
             <p className="mb-5">Don't have an account? Create New</p>
             <button
-              className="w-40 h-12 bg-transparent border-2 border-white text-white font-semibold rounded-lg"
+              className="w-40 h-12 bg-transparent border-2 border-white text-white font-semibold rounded-lg cursor-pointer hover:bg-white hover:text-blue-500 transition-all"
               onClick={() => setLoginMode(false)}
             >
               Sign Up

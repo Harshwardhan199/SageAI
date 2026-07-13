@@ -55,8 +55,8 @@ const QuizCard = ({
   };
 
   return (
-    <div className="flex flex-col gap-3 rounded-xl bg-[#202020] border border-[#2d2d2d] hover:border-[#383838] p-5 shadow-md transition-colors">
-      <div className="text-[17px] font-semibold text-white tracking-wide leading-relaxed">
+    <div className="flex flex-col gap-3 py-4 sm:py-5 text-primary">
+      <div className="text-[15px] sm:text-[17px] font-semibold tracking-wide leading-relaxed">
         <ReactMarkdown>{`Q${questionNumber}. ${quiz.question}`}</ReactMarkdown>
       </div>
 
