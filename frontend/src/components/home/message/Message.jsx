@@ -9,9 +9,10 @@ import MessageBody from "./MessageBody";
 
 const Message = forwardRef(({ message, style, loadSavedPrompts }, ref) => {
   const { user } = useAuth();
-  const { sender, content } = message;
+  const { sender, blocks } = message;
 
   const isUser = sender === "user";
+  const userText = blocks && blocks.length > 0 ? blocks[0].content : "";
 
   //Save Prompt
   const handleSavePrompt = async (text) => {
@@ -36,7 +37,7 @@ const Message = forwardRef(({ message, style, loadSavedPrompts }, ref) => {
       </div>
 
       {isUser ? (
-        <UserMessageActions user={user} text={content} onSave={handleSavePrompt} />
+        <UserMessageActions user={user} text={userText} onSave={handleSavePrompt} />
       ) : (
         <BotMessageActions message={message} />
       )}

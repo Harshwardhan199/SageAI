@@ -190,29 +190,39 @@ const chat = async (req, res) => {
 
     let llmResponse = rawResponse;
     if (typeof llmResponse === "string") {
-      llmResponse = {
-        type: "chat",
-        content: formatResponse(llmResponse)
-      };
-    } else if (llmResponse && llmResponse.type === "chat" && typeof llmResponse.content === "string") {
-      llmResponse.content = formatResponse(llmResponse.content);
-    } else if (llmResponse && llmResponse.type === "quiz") {
-      if (llmResponse.questions && !llmResponse.content) {
-        llmResponse.content = llmResponse.questions;
+      try {
+        llmResponse = JSON.parse(llmResponse);
+      } catch (e) {
+        llmResponse = {
+          blocks: [{ type: "chat", content: formatResponse(llmResponse) }]
+        };
       }
     }
 
+    if (llmResponse && Array.isArray(llmResponse.blocks)) {
+      llmResponse.blocks = llmResponse.blocks.map(block => {
+        if (block.type === "chat" && typeof block.content === "string") {
+          block.content = formatResponse(block.content);
+        }
+        return block;
+      });
+    } else {
+      llmResponse = {
+        blocks: [{ type: "chat", content: typeof llmResponse === "object" ? JSON.stringify(llmResponse) : String(llmResponse) }]
+      };
+    }
+
     // Save bot response (with embedding)
-    const botEmbeddingText = typeof llmResponse.content === "string" ? llmResponse.content : JSON.stringify(llmResponse.content);
+    const botEmbeddingText = llmResponse.blocks
+      .map(block => block.content || (block.questions ? JSON.stringify(block.questions) : ""))
+      .join(" ");
     const botEmbedding = await generateEmbedding(botEmbeddingText);
 
     const botMessage = new Message({
       chatId: currentChat,
       role: "model",
       sender: "bot",
-      type: llmResponse.type || "chat",
-      content: llmResponse.content,
-      title: llmResponse.title,
+      blocks: llmResponse.blocks,
       embedding: botEmbedding
     });
     await botMessage.save();

@@ -5,64 +5,74 @@ import QuizBlock from "./QuizBlock";
 import MarkdownBlock from "./MarkdownBlock";
 
 const MessageBody = ({ message, isUser }) => {
-  const { type, content } = message;
+  const { blocks } = message;
 
   if (isUser) {
-    return content;
+    return blocks && blocks.length > 0 ? blocks[0].content : "";
   }
 
-  if (type === "quiz") {
-    let quizData = [];
-    if (Array.isArray(content)) {
-      quizData = content;
-    } else if (typeof content === "string" && content.trim() !== "") {
-      try {
-        quizData = JSON.parse(content);
-      } catch (err) {
-        console.error("JSON.parse failed for quiz content:", err);
-      }
-    }
-    return (
-      <QuizBlock
-        quizzes={quizData}
-        language="python"
-        showCode={false}
-        className="flex flex-col gap-4 mb-2"
-      />
-    );
+  if (!blocks || !Array.isArray(blocks)) {
+    return null;
   }
-
-  // Otherwise, render as "chat"
-  const rawBlocks = parseBlocks(content || "", isUser);
-  const blocks = rawBlocks.map(block => {
-    if (block.type === "quiz") {
-      return {
-        type: "code",
-        language: "json",
-        content: block.content
-      };
-    }
-    return block;
-  });
 
   return (
     <>
       {blocks.map((block, index) => {
         switch (block.type) {
-          case "code":
+          case "chat": {
+            const rawBlocks = parseBlocks(block.content || "", isUser);
+            const chatBlocks = rawBlocks.map(b => {
+              if (b.type === "quiz") {
+                return {
+                  type: "code",
+                  language: "json",
+                  content: b.content
+                };
+              }
+              return b;
+            });
             return (
-              <CodeBlock
-                key={index}
-                language={block.language}
-                code={block.content}
-              />
+              <div key={index} className="chat-block mb-4 last:mb-0">
+                {chatBlocks.map((b, idx) => {
+                  if (b.type === "code") {
+                    return (
+                      <CodeBlock
+                        key={idx}
+                        language={b.language}
+                        code={b.content}
+                      />
+                    );
+                  } else if (b.type === "text") {
+                    return <MarkdownBlock key={idx} content={b.content} />;
+                  }
+                  return null;
+                })}
+              </div>
             );
+          }
 
-          case "text":
-            return <MarkdownBlock key={index} content={block.content} />;
+          case "quiz": {
+            const sourceData = block.questions;
+            const quizData = Array.isArray(sourceData)
+              ? sourceData
+              : (typeof sourceData === "string" && sourceData.trim() !== "")
+              ? JSON.parse(sourceData)
+              : [];
+            return (
+              <div key={index} className="quiz-block mb-4 last:mb-0">
+                {block.title && <div className="text-[19px] font-bold mb-2 text-[#e2e2e2]">{block.title}</div>}
+                <QuizBlock
+                  quizzes={quizData}
+                  language="python"
+                  showCode={false}
+                  className="flex flex-col gap-4 mb-2"
+                />
+              </div>
+            );
+          }
 
           default:
-            return null;
+            return null; // ignore unknown block types gracefully
         }
       })}
     </>

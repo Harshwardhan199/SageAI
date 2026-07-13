@@ -135,25 +135,37 @@ const tempChat = async (req, res) => {
 
     let llmResponse = rawResponse;
     if (typeof llmResponse === "string") {
-      llmResponse = {
-        type: "chat",
-        content: formatResponse(llmResponse)
-      };
-    } else if (llmResponse && llmResponse.type === "chat" && typeof llmResponse.content === "string") {
-      llmResponse.content = formatResponse(llmResponse.content);
-    } else if (llmResponse && llmResponse.type === "quiz") {
-      if (llmResponse.questions && !llmResponse.content) {
-        llmResponse.content = llmResponse.questions;
+      try {
+        llmResponse = JSON.parse(llmResponse);
+      } catch (e) {
+        llmResponse = {
+          blocks: [{ type: "chat", content: formatResponse(llmResponse) }]
+        };
       }
     }
 
+    if (llmResponse && Array.isArray(llmResponse.blocks)) {
+      llmResponse.blocks = llmResponse.blocks.map(block => {
+        if (block.type === "chat" && typeof block.content === "string") {
+          block.content = formatResponse(block.content);
+        }
+        return block;
+      });
+    } else {
+      llmResponse = {
+        blocks: [{ type: "chat", content: typeof llmResponse === "object" ? JSON.stringify(llmResponse) : String(llmResponse) }]
+      };
+    }
+
     // Save bot response in Redis
+    const botText = llmResponse.blocks
+      .map(block => block.content || (block.questions ? JSON.stringify(block.questions) : ""))
+      .join(" ");
+
     await addToRedisContext(currentChat, {
       sender: "bot",
-      text: typeof llmResponse.content === "string" ? llmResponse.content : JSON.stringify(llmResponse.content),
-      type: llmResponse.type || "chat",
-      content: llmResponse.content,
-      title: llmResponse.title
+      text: botText,
+      blocks: llmResponse.blocks
     });
 
     return res.json({ message: "Response generated", currentChat, llmResponse });

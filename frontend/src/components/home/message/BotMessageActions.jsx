@@ -6,28 +6,33 @@ const BotMessageActions = ({ message }) => {
   const handleCopy = () => {
     let textToCopy = "";
 
-    if (message.type === "quiz") {
-      const sourceData = message.content || message.questions;
-      const quizData = Array.isArray(sourceData)
-        ? sourceData
-        : (typeof sourceData === "string" && sourceData.trim() !== "")
-        ? JSON.parse(sourceData)
-        : [];
+    if (message.blocks && Array.isArray(message.blocks)) {
+      textToCopy = message.blocks.map(block => {
+        if (block.type === "chat") {
+          return block.content || "";
+        } else if (block.type === "quiz") {
+          const sourceData = block.questions;
+          const quizData = Array.isArray(sourceData)
+            ? sourceData
+            : (typeof sourceData === "string" && sourceData.trim() !== "")
+            ? JSON.parse(sourceData)
+            : [];
 
-      textToCopy = message.title ? `### ${message.title}\n\n` : "### Quiz\n\n";
-      quizData.forEach((q, idx) => {
-        textToCopy += `Q${idx + 1}. ${q.question}\n`;
-        if (q.options && Array.isArray(q.options)) {
-          q.options.forEach((opt, oIdx) => {
-            const letter = String.fromCharCode(65 + oIdx); // A, B, C, D
-            textToCopy += `${letter}) ${opt}\n`;
+          let quizText = block.title ? `### ${block.title}\n\n` : "### Quiz\n\n";
+          quizData.forEach((q, idx) => {
+            quizText += `Q${idx + 1}. ${q.question}\n`;
+            if (q.options && Array.isArray(q.options)) {
+              q.options.forEach((opt, oIdx) => {
+                const letter = String.fromCharCode(65 + oIdx); // A, B, C, D
+                quizText += `${letter}) ${opt}\n`;
+              });
+            }
+            quizText += `Answer: ${q.answer}\n\n`;
           });
+          return quizText.trim();
         }
-        textToCopy += `Answer: ${q.answer}\n\n`;
-      });
-      textToCopy = textToCopy.trim();
-    } else {
-      textToCopy = message.content || "";
+        return "";
+      }).filter(Boolean).join("\n\n");
     }
 
     navigator.clipboard.writeText(textToCopy);

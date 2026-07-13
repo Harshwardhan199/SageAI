@@ -45,75 +45,39 @@ NOMIC_API_KEY = os.getenv("NOMIC_API_KEY")
 def root():
     return {"status": "ok", "message": "LLM API is running"}
 
-CHAT_SYSTEM_PROMPT = (
-    "You are a helpful assistant.\n"
-    "You must ALWAYS respond in a strict JSON format matching this schema:\n"
+UNIFIED_SYSTEM_PROMPT = (
+    "You are a helpful assistant. You must respond ONLY in a strict JSON format.\n"
+    "The output JSON must match the following schema:\n"
     "{\n"
-    "  \"type\": \"chat\",\n"
-    "  \"content\": \"Markdown formatted response\"\n"
-    "}\n"
-    "Rules:\n"
-    "1. Return ONLY valid JSON. Do not wrap the JSON in markdown code blocks or code fences.\n"
-    "2. Do not include any explanations or commentary outside the JSON object.\n"
-    "3. The 'content' field may contain rich Markdown formatting as needed."
-)
-
-QUIZ_SYSTEM_PROMPT = (
-    "You are a helpful assistant.\n"
-    "You must ALWAYS respond in a strict JSON format matching this schema:\n"
-    "{\n"
-    "  \"type\": \"quiz\",\n"
-    "  \"title\": \"Quiz title\",\n"
-    "  \"questions\": [\n"
+    "  \"blocks\": [\n"
     "    {\n"
-    "      \"question\": \"Question text\",\n"
-    "      \"options\": [\n"
-    "        \"Option A\",\n"
-    "        \"Option B\",\n"
-    "        \"Option C\",\n"
-    "        \"Option D\"\n"
-    "      ],\n"
-    "      \"answer\": \"Option A\"\n"
+    "      \"type\": \"chat\",\n"
+    "      \"content\": \"Markdown formatted text\"\n"
+    "    },\n"
+    "    {\n"
+    "      \"type\": \"quiz\",\n"
+    "      \"title\": \"Quiz title\",\n"
+    "      \"questions\": [\n"
+    "        {\n"
+    "          \"question\": \"Question text\",\n"
+    "          \"options\": [\"Option A\", \"Option B\", \"Option C\", \"Option D\"],\n"
+    "          \"answer\": \"Option A\"\n"
+    "        }\n"
+    "      ]\n"
     "    }\n"
     "  ]\n"
-    "}\n"
+    "}\n\n"
     "Rules:\n"
-    "1. Return ONLY valid JSON. Do not wrap the JSON in markdown code blocks or code fences.\n"
-    "2. Do not include any explanations or commentary outside the JSON object.\n"
-    "3. The 'questions' array must contain between 5 and 10 questions.\n"
-    "4. Each question must have exactly 4 options.\n"
-    "5. The 'answer' field of each question must exactly match one of its options.\n"
-    "6. No markdown or explanations inside the JSON questions/answers/options."
+    "1. You must respond strictly with valid JSON. Do not wrap the JSON response in markdown code blocks or code fences (e.g. do not use ```json).\n"
+    "2. Do not include any explanations or commentary outside the JSON response.\n"
+    "3. The response must contain a top-level 'blocks' array containing one or more blocks in the order requested by the user.\n"
+    "4. Supported block types:\n"
+    "   - 'chat': For explanations, summaries, normal text, introductions, conclusions, or general conversation. The 'content' field must contain Markdown-formatted text.\n"
+    "   - 'quiz': For multiple-choice questions. Must include a 'title' string, and a 'questions' array. Each question must contain 'question', exactly 4 'options', and 'answer' matching exactly one of the options. Generate 5-10 questions. No markdown or explanations inside the questions, options, or answers.\n"
+    "5. Combine multiple blocks if the user's prompt has multiple logical parts (e.g. explain a topic then quiz the user)."
 )
 
-def detect_quiz_request(messages: list, prompt: str | None) -> bool:
-    keywords = ["quiz", "mcq", "multiple choice", "test me", "practice questions"]
-    if prompt:
-        prompt_lower = prompt.lower()
-        if any(kw in prompt_lower for kw in keywords):
-            return True
-    if messages:
-        for msg in reversed(messages):
-            content = ""
-            role = ""
-            if isinstance(msg, dict):
-                content = msg.get("content", "")
-                role = msg.get("role", "")
-            else:
-                content = getattr(msg, "content", "")
-                role = getattr(msg, "role", "")
-            
-            if role == "user" and content:
-                content_lower = content.lower()
-                if any(kw in content_lower for kw in keywords):
-                    return True
-                break
-    return False
-
-def prepare_messages(input_messages: list, prompt: str | None) -> list:
-    is_quiz = detect_quiz_request(input_messages, prompt)
-    target_instructions = QUIZ_SYSTEM_PROMPT if is_quiz else CHAT_SYSTEM_PROMPT
-    
+def prepare_messages(input_messages: list) -> list:
     messages = []
     for msg in input_messages:
         if isinstance(msg, dict):
@@ -129,9 +93,9 @@ def prepare_messages(input_messages: list, prompt: str | None) -> list:
             
     if system_idx != -1:
         original = messages[system_idx].get("content") or ""
-        messages[system_idx]["content"] = original + "\n\n" + target_instructions
+        messages[system_idx]["content"] = original + "\n\n" + UNIFIED_SYSTEM_PROMPT
     else:
-        messages.insert(0, {"role": "system", "content": target_instructions})
+        messages.insert(0, {"role": "system", "content": UNIFIED_SYSTEM_PROMPT})
         
     return messages
 
@@ -143,7 +107,7 @@ def chat(payload: ChatRequest):
         else:
             input_messages = [{"role": "user", "content": payload.message or ""}]
 
-        messages = prepare_messages(input_messages, payload.message)
+        messages = prepare_messages(input_messages)
 
         response = groqClient.chat.completions.create(
             model=payload.model,
@@ -155,22 +119,34 @@ def chat(payload: ChatRequest):
 
         try:
             parsed = json.loads(raw_content)
-            if not isinstance(parsed, dict) or "type" not in parsed:
+            if not isinstance(parsed, dict) or "blocks" not in parsed or not isinstance(parsed["blocks"], list):
                 return {
-                    "type": "chat",
-                    "content": raw_content
+                    "blocks": [
+                        {
+                            "type": "chat",
+                            "content": raw_content
+                        }
+                    ]
                 }
             return parsed
         except Exception:
             return {
-                "type": "chat",
-                "content": raw_content
+                "blocks": [
+                    {
+                        "type": "chat",
+                        "content": raw_content
+                    }
+                ]
             }
 
     except Exception as e:
         return {
-            "type": "chat",
-            "content": f"Error: {e}"
+            "blocks": [
+                {
+                    "type": "chat",
+                    "content": f"Error: {e}"
+                }
+            ]
         }
 
 @app.post("/feedback", response_class=PlainTextResponse)

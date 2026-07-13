@@ -6,6 +6,13 @@ const partSchema = new mongoose.Schema({
   url: { type: String }
 }, { _id: false });
 
+const blockSchema = new mongoose.Schema({
+  type: { type: String, required: true },
+  content: { type: mongoose.Schema.Types.Mixed },
+  title: { type: String },
+  questions: { type: mongoose.Schema.Types.Mixed }
+}, { _id: false });
+
 const messageSchema = new mongoose.Schema({
   chatId: { type: mongoose.Schema.Types.ObjectId, ref: "Chat", required: true },
   sender: { type: String, enum: ["user", "bot"], required: true },
@@ -13,10 +20,8 @@ const messageSchema = new mongoose.Schema({
   text: { type: String },
   parts: [partSchema],
 
-  // NEW structured response fields
-  type: { type: String, enum: ["chat", "quiz"], default: "chat" },
-  content: { type: mongoose.Schema.Types.Mixed },
-  title: { type: String },
+  // NEW structured content blocks
+  blocks: [blockSchema],
 
   attachments: [{
     type: { type: String, enum: ["image", "file", "link"], required: true },
@@ -49,32 +54,64 @@ messageSchema.pre("validate", function(next) {
     this.role = this.sender === "user" ? "user" : "model";
   }
 
-  // Sync type and content for user messages
-  if (this.sender === "user") {
-    this.type = "chat";
-    if (this.content === undefined || this.content === null) {
-      if (this.text) {
-        this.content = this.text;
-      } else if (this.parts && this.parts.length > 0) {
-        this.content = this.parts
-          .filter(p => p.type === "text")
-          .map(p => p.value)
-          .join("\n");
+  // Populate blocks for user messages if missing
+  if (this.sender === "user" && (!this.blocks || this.blocks.length === 0)) {
+    const userText = this.text || (this.parts && this.parts.filter(p => p.type === "text").map(p => p.value).join("\n")) || "";
+    this.blocks = [{ type: "chat", content: userText }];
+  }
+
+  // Convert legacy format (type/content) to blocks if blocks is missing
+  if (!this.blocks || this.blocks.length === 0) {
+    if (this.type && this.content) {
+      if (this.type === "quiz") {
+        this.blocks = [{
+          type: "quiz",
+          title: this.title || "Quiz",
+          questions: this.content
+        }];
       } else {
-        this.content = "";
+        this.blocks = [{
+          type: this.type,
+          content: this.content
+        }];
+      }
+    } else if (this.text) {
+      try {
+        const parsed = JSON.parse(this.text);
+        if (parsed && parsed.blocks && Array.isArray(parsed.blocks)) {
+          this.blocks = parsed.blocks;
+        } else if (parsed && parsed.type && (parsed.content || parsed.questions)) {
+          if (parsed.type === "quiz") {
+            this.blocks = [{
+              type: "quiz",
+              title: parsed.title || "Quiz",
+              questions: parsed.content || parsed.questions
+            }];
+          } else {
+            this.blocks = [{
+              type: parsed.type,
+              content: parsed.content
+            }];
+          }
+        } else {
+          this.blocks = [{ type: "chat", content: this.text }];
+        }
+      } catch (e) {
+        this.blocks = [{ type: "chat", content: this.text }];
       }
     }
   }
 
-  // Sync text and parts from content (for bot messages where content is the source of truth)
-  if (this.content !== undefined && this.content !== null && !this.text) {
-    if (typeof this.content === "string") {
-      this.text = this.content;
-      this.parts = [{ type: "text", value: this.content }];
-    } else {
-      this.text = JSON.stringify(this.content);
-      this.parts = [{ type: "text", value: this.text }];
-    }
+  // Sync text and parts from blocks list
+  if (this.blocks && this.blocks.length > 0 && !this.text) {
+    this.text = this.blocks.map(block => {
+      if (block.type === "chat") {
+        return block.content || "";
+      } else if (block.type === "quiz") {
+        return JSON.stringify({ type: "quiz", title: block.title, questions: block.questions });
+      }
+      return JSON.stringify(block);
+    }).join("\n\n");
   }
 
   // Sync text and parts
@@ -87,36 +124,6 @@ messageSchema.pre("validate", function(next) {
     }
   } else if (this.text) {
     this.parts = [{ type: "text", value: this.text }];
-  }
-
-  // Conversely, if text/parts are set but type/content are not
-  if (!this.type) {
-    this.type = "chat";
-  }
-  if (this.content === undefined || this.content === null) {
-    if (this.text) {
-      try {
-        const parsed = JSON.parse(this.text);
-        if (parsed && (parsed.type === "chat" || parsed.type === "quiz")) {
-          this.type = parsed.type;
-          this.content = parsed.content || parsed.questions;
-          if (parsed.title) this.title = parsed.title;
-        } else if (Array.isArray(parsed)) {
-          this.type = "quiz";
-          this.content = parsed;
-        } else if (parsed && parsed.questions) {
-          this.type = "quiz";
-          this.content = parsed.questions;
-          if (parsed.title) this.title = parsed.title;
-        } else {
-          this.content = this.text;
-        }
-      } catch (e) {
-        this.content = this.text;
-      }
-    } else {
-      this.content = "";
-    }
   }
 
   next();
