@@ -1,5 +1,3 @@
-// components/home/main/ChatArea.jsx
-
 import Message from "../message/Message";
 import WelcomeScreen from "./WelcomeScreen";
 import PromptInput from "./PromptInput";
@@ -25,6 +23,11 @@ const ChatArea = ({
   onHitEnter,
 
   LoadSavedPrompts,
+
+  selectedImage,
+  setSelectedImage,
+  selectedAudio,
+  setSelectedAudio,
 }) => {
   return (
     <>
@@ -49,6 +52,10 @@ const ChatArea = ({
                 handlePrompt={handlePrompt}
                 onHitEnter={onHitEnter}
                 inputBarRef={inputBarRef}
+                selectedImage={selectedImage}
+                setSelectedImage={setSelectedImage}
+                selectedAudio={selectedAudio}
+                setSelectedAudio={setSelectedAudio}
               />
             )}
 
@@ -56,13 +63,8 @@ const ChatArea = ({
             {messages.map((msg, idx) => (
               <Message
                 key={msg._id || idx}
-                sender={msg.sender}
-                text={msg.text}
+                message={msg}
                 loadSavedPrompts={LoadSavedPrompts}
-                style={{
-                  minHeight:
-                    idx === lastBotIndex ? `${responseHeight}px` : "auto",
-                }}
                 ref={
                   idx === lastUserIndex
                     ? latestUserRef
@@ -72,6 +74,11 @@ const ChatArea = ({
                 }
               />
             ))}
+
+            {/* Spacer to keep space occupied below the bot message */}
+            {messages.length > 0 && lastBotIndex !== -1 && (
+              <div style={{ height: `${responseHeight}px` }} />
+            )}
           </div>
         </div>
       </div>
@@ -87,6 +94,10 @@ const ChatArea = ({
                 handlePrompt={handlePrompt}
                 onHitEnter={onHitEnter}
                 inputBarRef={inputBarRef}
+                selectedImage={selectedImage}
+                setSelectedImage={setSelectedImage}
+                selectedAudio={selectedAudio}
+                setSelectedAudio={setSelectedAudio}
               />
             </div>
 

@@ -13,23 +13,26 @@ const TitleBar = ({
   DeletePrompt,
 
   handleLogOut,
+
+  selectedModel,
+  setSelectedModel,
 }) => {
   return (
-    <div className="sticky top-0 flex w-full justify-between text-white pt-4 pr-8 pb-4 bg-[#030303] border-b border-b-[#151515] z-2">
+    <div className="sticky top-0 flex w-full justify-between items-center text-white pt-4 pr-8 pb-4 bg-[#030303] border-b border-b-[#151515] z-2">
       {/* Left */}
-      <div className="flex items-center gap-3">
-        <div className="flex items-center">
-          {/* Future sidebar toggle */}
-          {/* <button className="h-[20px]">
-            <img
-              src="https://img.icons8.com/?size=100&id=40217&format=png&color=1A1A1A"
-              alt="Sidebar"
-              className="invert w-[14px] h-auto"
-            />
-          </button> */}
-        </div>
-
-        <div className="text-[20px]">Sage</div>
+      <div className="flex items-center gap-4 pl-4">
+        <div className="text-[20px] font-semibold bg-clip-text">SageAI</div>
+        <select
+          value={selectedModel}
+          onChange={(e) => setSelectedModel(e.target.value)}
+          className="bg-[#181818] text-[#c5c5c5] text-xs font-medium rounded-lg border border-[#2d2d2d] focus:ring-1 focus:ring-blue-500 focus:border-blue-500 block p-1.5 px-2.5 outline-none cursor-pointer hover:bg-[#222] transition-colors"
+        >
+          <option value="llama-3.3-70b-versatile">
+            Llama 3.3 70B (Versatile)
+          </option>
+          <option value="openai/gpt-oss-120b">GPT-OSS 120B (Reasoning)</option>
+          <option value="qwen/qwen3-32b">Qwen3 32B (Thinking)</option>
+        </select>
       </div>
 
       {/* Logged In */}

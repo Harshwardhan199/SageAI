@@ -243,7 +243,60 @@ const getChat = async (req, res) => {
     // retrive messages 
     const messages = await Message.find({ chatId }).sort({ createdAt: 1 })
 
-    res.status(200).json({ messages });
+    const formattedMessages = messages.map(msg => {
+      const msgObj = msg.toObject ? msg.toObject() : msg;
+      if (!msgObj.blocks || msgObj.blocks.length === 0) {
+        if (msgObj.type && msgObj.content) {
+          if (msgObj.type === "quiz") {
+            msgObj.blocks = [{
+              type: "quiz",
+              title: msgObj.title || "Quiz",
+              questions: msgObj.content
+            }];
+          } else {
+            msgObj.blocks = [{
+              type: msgObj.type,
+              content: msgObj.content
+            }];
+          }
+        } else if (msgObj.text) {
+          try {
+            const parsed = JSON.parse(msgObj.text);
+            if (parsed && parsed.blocks && Array.isArray(parsed.blocks)) {
+              msgObj.blocks = parsed.blocks;
+            } else if (parsed && parsed.type && (parsed.content || parsed.questions)) {
+              if (parsed.type === "quiz") {
+                msgObj.blocks = [{
+                  type: "quiz",
+                  title: parsed.title || "Quiz",
+                  questions: parsed.content || parsed.questions
+                }];
+              } else {
+                msgObj.blocks = [{
+                  type: parsed.type,
+                  content: parsed.content
+                }];
+              }
+            } else if (Array.isArray(parsed)) {
+              msgObj.blocks = [{
+                type: "quiz",
+                title: msgObj.title || "Quiz",
+                questions: parsed
+              }];
+            } else {
+              msgObj.blocks = [{ type: "chat", content: msgObj.text }];
+            }
+          } catch (e) {
+            msgObj.blocks = [{ type: "chat", content: msgObj.text }];
+          }
+        } else {
+          msgObj.blocks = [{ type: "chat", content: "" }];
+        }
+      }
+      return msgObj;
+    });
+
+    res.status(200).json({ messages: formattedMessages });
 
   } catch (err) {
     res.status(500).json({ error: "Server error" });
