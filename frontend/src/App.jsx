@@ -3,6 +3,7 @@ import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
 import { useAuth } from "./context/AuthContext";
+import LoadingOverlay from "./components/common/LoadingOverlay";
 
 import Home from "./components/home/Home";
 import LoginSignUp from "./components/LoginSignUp";
@@ -10,20 +11,9 @@ import LoginSignUp from "./components/LoginSignUp";
 function App() {
   const { loading } = useAuth();
 
-  if (loading) {
-    return (
-      <>
-        <div className="flex items-center justify-center w-screen h-screen bg-[#141414] text-white text-xl">
-          Loading...
-        </div>
-
-        <ToastContainer position="top-center" autoClose={3000} />
-      </>
-    );
-  }
-
   return (
     <>
+      {/* Routes always render — no layout shifts or remounting */}
       <Router>
         <Routes>
           <Route path="/" element={<Home />} />
@@ -31,6 +21,10 @@ function App() {
         </Routes>
       </Router>
 
+      {/* Global loading overlay — appears on top while auth is initializing */}
+      <LoadingOverlay visible={loading} message="Initializing..." />
+
+      {/* Toast notifications render independently */}
       <ToastContainer position="top-center" autoClose={3000} />
     </>
   );
