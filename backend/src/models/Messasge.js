@@ -13,6 +13,11 @@ const messageSchema = new mongoose.Schema({
   text: { type: String },
   parts: [partSchema],
 
+  // NEW structured response fields
+  type: { type: String, enum: ["chat", "quiz"], default: "chat" },
+  content: { type: mongoose.Schema.Types.Mixed },
+  title: { type: String },
+
   attachments: [{
     type: { type: String, enum: ["image", "file", "link"], required: true },
     url: { type: String, required: true }
@@ -44,6 +49,34 @@ messageSchema.pre("validate", function(next) {
     this.role = this.sender === "user" ? "user" : "model";
   }
 
+  // Sync type and content for user messages
+  if (this.sender === "user") {
+    this.type = "chat";
+    if (this.content === undefined || this.content === null) {
+      if (this.text) {
+        this.content = this.text;
+      } else if (this.parts && this.parts.length > 0) {
+        this.content = this.parts
+          .filter(p => p.type === "text")
+          .map(p => p.value)
+          .join("\n");
+      } else {
+        this.content = "";
+      }
+    }
+  }
+
+  // Sync text and parts from content (for bot messages where content is the source of truth)
+  if (this.content !== undefined && this.content !== null && !this.text) {
+    if (typeof this.content === "string") {
+      this.text = this.content;
+      this.parts = [{ type: "text", value: this.content }];
+    } else {
+      this.text = JSON.stringify(this.content);
+      this.parts = [{ type: "text", value: this.text }];
+    }
+  }
+
   // Sync text and parts
   if (this.parts && this.parts.length > 0) {
     if (!this.text) {
@@ -54,6 +87,36 @@ messageSchema.pre("validate", function(next) {
     }
   } else if (this.text) {
     this.parts = [{ type: "text", value: this.text }];
+  }
+
+  // Conversely, if text/parts are set but type/content are not
+  if (!this.type) {
+    this.type = "chat";
+  }
+  if (this.content === undefined || this.content === null) {
+    if (this.text) {
+      try {
+        const parsed = JSON.parse(this.text);
+        if (parsed && (parsed.type === "chat" || parsed.type === "quiz")) {
+          this.type = parsed.type;
+          this.content = parsed.content || parsed.questions;
+          if (parsed.title) this.title = parsed.title;
+        } else if (Array.isArray(parsed)) {
+          this.type = "quiz";
+          this.content = parsed;
+        } else if (parsed && parsed.questions) {
+          this.type = "quiz";
+          this.content = parsed.questions;
+          if (parsed.title) this.title = parsed.title;
+        } else {
+          this.content = this.text;
+        }
+      } catch (e) {
+        this.content = this.text;
+      }
+    } else {
+      this.content = "";
+    }
   }
 
   next();

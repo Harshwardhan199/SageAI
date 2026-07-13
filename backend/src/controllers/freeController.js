@@ -65,6 +65,9 @@ const addToRedisContext = async (chatId, messageObj) => {
   const cleanMsg = {
     sender: messageObj.sender,
     text: messageObj.text,
+    type: messageObj.type,
+    content: messageObj.content,
+    title: messageObj.title,
     timestamp: new Date().toISOString()
   };
 
@@ -130,13 +133,27 @@ const tempChat = async (req, res) => {
       []
     );
 
-    const llmResponse = formatResponse(rawResponse);
+    let llmResponse = rawResponse;
+    if (typeof llmResponse === "string") {
+      llmResponse = {
+        type: "chat",
+        content: formatResponse(llmResponse)
+      };
+    } else if (llmResponse && llmResponse.type === "chat" && typeof llmResponse.content === "string") {
+      llmResponse.content = formatResponse(llmResponse.content);
+    } else if (llmResponse && llmResponse.type === "quiz") {
+      if (llmResponse.questions && !llmResponse.content) {
+        llmResponse.content = llmResponse.questions;
+      }
+    }
 
     // Save bot response in Redis
     await addToRedisContext(currentChat, {
       sender: "bot",
-      text: llmResponse,
-      parts: [{ type: "text", value: llmResponse }]
+      text: typeof llmResponse.content === "string" ? llmResponse.content : JSON.stringify(llmResponse.content),
+      type: llmResponse.type || "chat",
+      content: llmResponse.content,
+      title: llmResponse.title
     });
 
     return res.json({ message: "Response generated", currentChat, llmResponse });

@@ -65,8 +65,7 @@ const ChatArea = ({
             {messages.map((msg, idx) => (
               <Message
                 key={msg._id || idx}
-                sender={msg.sender}
-                text={msg.text}
+                message={msg}
                 loadSavedPrompts={LoadSavedPrompts}
                 style={{
                   minHeight:

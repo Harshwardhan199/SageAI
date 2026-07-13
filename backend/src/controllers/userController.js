@@ -243,7 +243,40 @@ const getChat = async (req, res) => {
     // retrive messages 
     const messages = await Message.find({ chatId }).sort({ createdAt: 1 })
 
-    res.status(200).json({ messages });
+    const formattedMessages = messages.map(msg => {
+      const msgObj = msg.toObject ? msg.toObject() : msg;
+      if (!msgObj.type) {
+        msgObj.type = "chat";
+      }
+      if (msgObj.content === undefined || msgObj.content === null) {
+        if (msgObj.text) {
+          try {
+            const parsed = JSON.parse(msgObj.text);
+            if (parsed && (parsed.type === "chat" || parsed.type === "quiz")) {
+              msgObj.type = parsed.type;
+              msgObj.content = parsed.content || parsed.questions;
+              if (parsed.title) msgObj.title = parsed.title;
+            } else if (Array.isArray(parsed)) {
+              msgObj.type = "quiz";
+              msgObj.content = parsed;
+            } else if (parsed && parsed.questions) {
+              msgObj.type = "quiz";
+              msgObj.content = parsed.questions;
+              if (parsed.title) msgObj.title = parsed.title;
+            } else {
+              msgObj.content = msgObj.text;
+            }
+          } catch (e) {
+            msgObj.content = msgObj.text;
+          }
+        } else {
+          msgObj.content = "";
+        }
+      }
+      return msgObj;
+    });
+
+    res.status(200).json({ messages: formattedMessages });
 
   } catch (err) {
     res.status(500).json({ error: "Server error" });

@@ -562,8 +562,8 @@ const Home = () => {
     const botId = Date.now();
     setMessages((prev) => [
       ...prev,
-      { sender: "user", text: displayText },
-      { sender: "bot", text: "...", _id: botId },
+      { sender: "user", type: "chat", content: displayText },
+      { sender: "bot", type: "chat", content: "...", _id: botId },
     ]);
 
     if (user) {
@@ -580,7 +580,7 @@ const Home = () => {
           // response
           setMessages((prev) =>
             prev.map((msg) =>
-              msg._id === botId ? { ...msg, text: resData } : msg,
+              msg._id === botId ? { ...msg, type: resData.type, content: resData.content || resData.questions, title: resData.title } : msg,
             ),
           );
 
@@ -595,7 +595,8 @@ const Home = () => {
               msg._id === botId
                 ? {
                     ...msg,
-                    text: `Error: ${error.response?.data?.error || error.message}`,
+                    type: "chat",
+                    content: `Error: ${error.response?.data?.error || error.message}`,
                   }
                 : msg,
             ),
@@ -616,7 +617,7 @@ const Home = () => {
           // response
           setMessages((prev) =>
             prev.map((msg) =>
-              msg._id === botId ? { ...msg, text: resData } : msg,
+              msg._id === botId ? { ...msg, type: resData.type, content: resData.content || resData.questions, title: resData.title } : msg,
             ),
           );
         } catch (error) {
@@ -629,7 +630,8 @@ const Home = () => {
               msg._id === botId
                 ? {
                     ...msg,
-                    text: `Error: ${error.response?.data?.error || error.message}`,
+                    type: "chat",
+                    content: `Error: ${error.response?.data?.error || error.message}`,
                   }
                 : msg,
             ),
@@ -649,7 +651,7 @@ const Home = () => {
           // response
           setMessages((prev) =>
             prev.map((msg) =>
-              msg._id === botId ? { ...msg, text: resData } : msg,
+              msg._id === botId ? { ...msg, type: resData.type, content: resData.content || resData.questions, title: resData.title } : msg,
             ),
           );
 
@@ -664,7 +666,8 @@ const Home = () => {
               msg._id === botId
                 ? {
                     ...msg,
-                    text: `Error: ${error.response?.data?.error || error.message}`,
+                    type: "chat",
+                    content: `Error: ${error.response?.data?.error || error.message}`,
                   }
                 : msg,
             ),
@@ -682,7 +685,7 @@ const Home = () => {
           // response
           setMessages((prev) =>
             prev.map((msg) =>
-              msg._id === botId ? { ...msg, text: resData } : msg,
+              msg._id === botId ? { ...msg, type: resData.type, content: resData.content || resData.questions, title: resData.title } : msg,
             ),
           );
         } catch (error) {
@@ -695,7 +698,8 @@ const Home = () => {
               msg._id === botId
                 ? {
                     ...msg,
-                    text: `Error: ${error.response?.data?.error || error.message}`,
+                    type: "chat",
+                    content: `Error: ${error.response?.data?.error || error.message}`,
                   }
                 : msg,
             ),

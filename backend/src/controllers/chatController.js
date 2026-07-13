@@ -68,6 +68,9 @@ const addToRedisContext = async (chatId, messageObj) => {
   const cleanMsg = {
     sender: messageObj.sender,
     text: messageObj.text,
+    type: messageObj.type,
+    content: messageObj.content,
+    title: messageObj.title,
     timestamp: new Date().toISOString()
   };
 
@@ -185,22 +188,31 @@ const chat = async (req, res) => {
       semanticMatches
     );
 
-    const llmResponse = formatResponse(rawResponse);
+    let llmResponse = rawResponse;
+    if (typeof llmResponse === "string") {
+      llmResponse = {
+        type: "chat",
+        content: formatResponse(llmResponse)
+      };
+    } else if (llmResponse && llmResponse.type === "chat" && typeof llmResponse.content === "string") {
+      llmResponse.content = formatResponse(llmResponse.content);
+    } else if (llmResponse && llmResponse.type === "quiz") {
+      if (llmResponse.questions && !llmResponse.content) {
+        llmResponse.content = llmResponse.questions;
+      }
+    }
 
     // Save bot response (with embedding)
-    const botEmbedding = await generateEmbedding(llmResponse);
-
-    let llmText;
-    if (Array.isArray(llmResponse) || typeof llmResponse === "object") {
-      llmText = JSON.stringify(llmResponse);
-    } else {
-      llmText = llmResponse;
-    }
+    const botEmbeddingText = typeof llmResponse.content === "string" ? llmResponse.content : JSON.stringify(llmResponse.content);
+    const botEmbedding = await generateEmbedding(botEmbeddingText);
 
     const botMessage = new Message({
       chatId: currentChat,
       role: "model",
-      parts: [{ type: "text", value: llmText }],
+      sender: "bot",
+      type: llmResponse.type || "chat",
+      content: llmResponse.content,
+      title: llmResponse.title,
       embedding: botEmbedding
     });
     await botMessage.save();

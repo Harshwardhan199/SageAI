@@ -58,11 +58,11 @@ class ReasoningService {
         messages: messages
       });
 
-      const text = response.data;
-      if (text.startsWith("Error:")) {
-        throw new Error(text);
+      const resData = response.data;
+      if (typeof resData === "string" && resData.startsWith("Error:")) {
+        throw new Error(resData);
       }
-      return text;
+      return resData;
     } catch (err) {
       console.error(`ReasoningService failed for model ${model}:`, err.message);
       throw new Error(`Reasoning model (${model}) failed: ${err.message}`);

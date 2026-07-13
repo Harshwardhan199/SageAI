@@ -1,16 +1,49 @@
 import { parseBlocks } from "./utils/parseBlocks";
-import { extractQuiz } from "./utils/quizParser";
 
 import CodeBlock from "./CodeBlock";
 import QuizBlock from "./QuizBlock";
 import MarkdownBlock from "./MarkdownBlock";
 
-const MessageBody = ({ text, isUser }) => {
+const MessageBody = ({ message, isUser }) => {
+  const { type, content } = message;
+
   if (isUser) {
-    return text;
+    return content;
   }
 
-  const blocks = parseBlocks(text, isUser);
+  if (type === "quiz") {
+    let quizData = [];
+    if (Array.isArray(content)) {
+      quizData = content;
+    } else if (typeof content === "string" && content.trim() !== "") {
+      try {
+        quizData = JSON.parse(content);
+      } catch (err) {
+        console.error("JSON.parse failed for quiz content:", err);
+      }
+    }
+    return (
+      <QuizBlock
+        quizzes={quizData}
+        language="python"
+        showCode={false}
+        className="flex flex-col gap-4 mb-2"
+      />
+    );
+  }
+
+  // Otherwise, render as "chat"
+  const rawBlocks = parseBlocks(content || "", isUser);
+  const blocks = rawBlocks.map(block => {
+    if (block.type === "quiz") {
+      return {
+        type: "code",
+        language: "json",
+        content: block.content
+      };
+    }
+    return block;
+  });
 
   return (
     <>
@@ -22,27 +55,6 @@ const MessageBody = ({ text, isUser }) => {
                 key={index}
                 language={block.language}
                 code={block.content}
-              />
-            );
-
-          case "quiz":
-            let quizData = [];
-            try {
-              quizData = JSON.parse(block.content);
-            } catch (err) {
-              console.error("JSON.parse failed for quiz block:", err);
-              const extracted = extractQuiz(block.content);
-              if (extracted) {
-                quizData = extracted.quiz;
-              }
-            }
-            return (
-              <QuizBlock
-                key={index}
-                quizzes={quizData}
-                language={block.language}
-                showCode
-                className="flex flex-col gap-4 mb-2"
               />
             );
 
