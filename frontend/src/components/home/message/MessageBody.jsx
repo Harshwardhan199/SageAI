@@ -60,8 +60,8 @@ const MessageBody = ({ message, isUser }) => {
               : [];
             return (
               <div key={index} className="quiz-block mb-4 last:mb-0">
-                {block.title && <div className="text-[19px] font-bold mb-2 text-[#e2e2e2]">{block.title}</div>}
                 <QuizBlock
+                  title={block.title || "Quiz"}
                   quizzes={quizData}
                   language="python"
                   showCode={false}
