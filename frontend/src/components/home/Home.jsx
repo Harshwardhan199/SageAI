@@ -71,6 +71,9 @@ const Home = () => {
   const inputBarRef = useRef(null);
   const [promptText, setPromptText] = useState("");
   const [loading, setLoading] = useState(false);
+  const [selectedModel, setSelectedModel] = useState("llama-3.3-70b-versatile");
+  const [selectedImage, setSelectedImage] = useState(null);
+  const [selectedAudio, setSelectedAudio] = useState(null);
 
   const containerRef = useRef(null);
   const latestUserRef = useRef(null);
@@ -181,7 +184,7 @@ const Home = () => {
         await api.post(
           "/user/updateFolder",
           { ...folderData, folderId: editingFolderId },
-          { withCredentials: true }
+          { withCredentials: true },
         );
       } else {
         await api.post("/user/createFolder", folderData, {
@@ -514,38 +517,67 @@ const Home = () => {
 
   // Send prompt req
   const handlePrompt = async () => {
-    if (promptText == "" || loading == true) {
+    if (
+      (promptText.trim() === "" && !selectedImage && !selectedAudio) ||
+      loading === true
+    ) {
       return;
     }
 
     setLoading(true);
 
-    let prompt = promptText;
+    const prompt = promptText;
+    const parts = [];
+    if (prompt.trim()) {
+      parts.push({ type: "text", value: prompt });
+    }
+    if (selectedImage) {
+      parts.push({ type: "image", url: selectedImage });
+    }
+    if (selectedAudio) {
+      parts.push({ type: "audio", url: selectedAudio });
+    }
+
+    // Build user message display text containing attachment indicators
+    let displayText = prompt;
+    const indicators = [];
+    if (selectedImage) indicators.push("🖼️ [Image Attached]");
+    if (selectedAudio) indicators.push("🎵 [Audio Attached]");
+    if (indicators.length > 0) {
+      displayText =
+        (displayText ? displayText + "\n\n" : "") + indicators.join("\n");
+    }
+    if (!displayText) {
+      displayText = "Multi-Modal Input";
+    }
+
+    // Clear input states immediately
     setPromptText("");
+    setSelectedImage(null);
+    setSelectedAudio(null);
+    if (inputBarRef.current) {
+      inputBarRef.current.value = "";
+    }
+
+    const botId = Date.now();
+    setMessages((prev) => [
+      ...prev,
+      { sender: "user", text: displayText },
+      { sender: "bot", text: "...", _id: botId },
+    ]);
 
     if (user) {
-      const botId = Date.now();
-      setMessages((prev) => [
-        ...prev,
-        { sender: "user", text: prompt },
-        { sender: "bot", text: "...", _id: botId },
-      ]);
-
-      inputBarRef.current.value = "";
-
       // New chat prompt
       if (!currentChat) {
         try {
           const promptRes = await api.post(
             "/user/chat",
-            { prompt },
+            { prompt, parts, model: selectedModel },
             { withCredentials: true },
           );
           const resData = promptRes.data.llmResponse;
-
-          //console.log(resData);
-
-          //response
+          console.log("RES: ", resData);
+          // response
           setMessages((prev) =>
             prev.map((msg) =>
               msg._id === botId ? { ...msg, text: resData } : msg,
@@ -557,6 +589,16 @@ const Home = () => {
           console.error(
             "Error Sending Prompt:",
             error.response?.data || error.message,
+          );
+          setMessages((prev) =>
+            prev.map((msg) =>
+              msg._id === botId
+                ? {
+                    ...msg,
+                    text: `Error: ${error.response?.data?.error || error.message}`,
+                  }
+                : msg,
+            ),
           );
         }
 
@@ -566,14 +608,12 @@ const Home = () => {
         try {
           const promptRes = await api.post(
             "/user/chat",
-            { prompt, currentChat },
+            { prompt, parts, model: selectedModel, currentChat },
             { withCredentials: true },
           );
           const resData = promptRes.data.llmResponse;
 
-          console.log(resData);
-
-          //response
+          // response
           setMessages((prev) =>
             prev.map((msg) =>
               msg._id === botId ? { ...msg, text: resData } : msg,
@@ -584,28 +624,29 @@ const Home = () => {
             "Error Sending Prompt:",
             error.response?.data || error.message,
           );
+          setMessages((prev) =>
+            prev.map((msg) =>
+              msg._id === botId
+                ? {
+                    ...msg,
+                    text: `Error: ${error.response?.data?.error || error.message}`,
+                  }
+                : msg,
+            ),
+          );
         }
       }
     } else {
-      const botId = Date.now();
-      setMessages((prev) => [
-        ...prev,
-        { sender: "user", text: prompt },
-        { sender: "bot", text: "...", _id: botId },
-      ]);
-
-      // New chat prompt
+      // New chat prompt for guest
       if (!currentChat) {
         try {
           const promptRes = await axios.post(
             `${config.BACKEND_URL}/api/temp/chat`,
-            { prompt },
+            { prompt, parts, model: selectedModel },
           );
           const resData = promptRes.data.llmResponse;
 
-          console.log(resData);
-
-          //response
+          // response
           setMessages((prev) =>
             prev.map((msg) =>
               msg._id === botId ? { ...msg, text: resData } : msg,
@@ -618,19 +659,27 @@ const Home = () => {
             "Error Sending Prompt:",
             error.response?.data || error.message,
           );
+          setMessages((prev) =>
+            prev.map((msg) =>
+              msg._id === botId
+                ? {
+                    ...msg,
+                    text: `Error: ${error.response?.data?.error || error.message}`,
+                  }
+                : msg,
+            ),
+          );
         }
       } else {
-        // Prompt on continued chat
+        // Prompt on continued chat for guest
         try {
           const promptRes = await axios.post(
             `${config.BACKEND_URL}/api/temp/chat`,
-            { prompt, currentChat },
+            { prompt, parts, model: selectedModel, currentChat },
           );
           const resData = promptRes.data.llmResponse;
 
-          console.log(resData);
-
-          //response
+          // response
           setMessages((prev) =>
             prev.map((msg) =>
               msg._id === botId ? { ...msg, text: resData } : msg,
@@ -640,6 +689,16 @@ const Home = () => {
           console.error(
             "Error Sending Prompt:",
             error.response?.data || error.message,
+          );
+          setMessages((prev) =>
+            prev.map((msg) =>
+              msg._id === botId
+                ? {
+                    ...msg,
+                    text: `Error: ${error.response?.data?.error || error.message}`,
+                  }
+                : msg,
+            ),
           );
         }
       }
@@ -776,6 +835,8 @@ const Home = () => {
             TogglePinPrompt={TogglePinPrompt}
             DeletePrompt={DeletePrompt}
             handleLogOut={handleLogOut}
+            selectedModel={selectedModel}
+            setSelectedModel={setSelectedModel}
           />
 
           <ChatArea
@@ -795,6 +856,10 @@ const Home = () => {
             handlePrompt={handlePrompt}
             onHitEnter={onHitEnter}
             LoadSavedPrompts={LoadSavedPrompts}
+            selectedImage={selectedImage}
+            setSelectedImage={setSelectedImage}
+            selectedAudio={selectedAudio}
+            setSelectedAudio={setSelectedAudio}
           />
         </div>
 

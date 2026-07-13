@@ -25,6 +25,11 @@ const ChatArea = ({
   onHitEnter,
 
   LoadSavedPrompts,
+
+  selectedImage,
+  setSelectedImage,
+  selectedAudio,
+  setSelectedAudio,
 }) => {
   return (
     <>
@@ -49,6 +54,10 @@ const ChatArea = ({
                 handlePrompt={handlePrompt}
                 onHitEnter={onHitEnter}
                 inputBarRef={inputBarRef}
+                selectedImage={selectedImage}
+                setSelectedImage={setSelectedImage}
+                selectedAudio={selectedAudio}
+                setSelectedAudio={setSelectedAudio}
               />
             )}
 
@@ -61,7 +70,7 @@ const ChatArea = ({
                 loadSavedPrompts={LoadSavedPrompts}
                 style={{
                   minHeight:
-                    idx === lastBotIndex ? `${responseHeight}px` : "auto",
+                     idx === lastBotIndex ? `${responseHeight}px` : "auto",
                 }}
                 ref={
                   idx === lastUserIndex
@@ -87,6 +96,10 @@ const ChatArea = ({
                 handlePrompt={handlePrompt}
                 onHitEnter={onHitEnter}
                 inputBarRef={inputBarRef}
+                selectedImage={selectedImage}
+                setSelectedImage={setSelectedImage}
+                selectedAudio={selectedAudio}
+                setSelectedAudio={setSelectedAudio}
               />
             </div>
 

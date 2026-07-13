@@ -2,8 +2,10 @@ require("dotenv").config();
 const axios = require("axios")
 
 const { v4: uuidv4 } = require("uuid");
-
 const { getRedis } = require("../db");
+
+const InputRouter = require("../services/InputRouter");
+const ReasoningService = require("../services/ReasoningService");
 
 const LLM_API_URL = process.env.LLM_API_URL;
 
@@ -81,46 +83,66 @@ const getRedisContext = async (chatId) => {
 // Main function
 const tempChat = async (req, res) => {
   try {
-
-    let { currentChat, prompt } = req.body;
+    let { currentChat, prompt, parts, model } = req.body;
 
     // Create chat if not exists
     if (!currentChat) {
       currentChat = `guest-${uuidv4()}`;
     }
 
-     // Save user message in Redis
+    // Default to llama-3.3-70b-versatile if model not provided
+    if (!model) {
+      model = "llama-3.3-70b-versatile";
+    }
+
+    // Validate that reasoning model is allowed
+    if (!ReasoningService.allowedModels.includes(model)) {
+      return res.status(400).json({ error: `Invalid reasoning model selected: ${model}` });
+    }
+
+    // Support both new 'parts' structure and legacy single 'prompt' string
+    if (!parts || !Array.isArray(parts)) {
+      parts = [{ type: "text", value: prompt || "" }];
+    }
+
+    // Extract basic text prompt for title & saving purposes
+    const textPart = parts.find(p => p.type === "text");
+    const textPrompt = textPart ? textPart.value : (prompt || "Multi-Modal Message");
+
+    // Save user message in Redis context (for short term history compatibility)
     await addToRedisContext(currentChat, {
       sender: "user",
-      text: prompt
+      text: textPrompt,
+      parts
     });
 
     // Retrieve Redis context
     const contextMessages = await getRedisContext(currentChat);
 
-    // Construct LLM input (Redis context + top semantic matches)
-    const llmContext = contextMessages
-      .map((m) => `${m.sender}: ${m.text}`)
-      .join("\n");
+    // Route input modalities and generate final reasoning prompt
+    const finalPrompt = await InputRouter.route(parts);
 
-    // Send prompt + context to FastAPI → LLaMA3 - (llama3:latest)
-    const apiRes = await axios.post(`${LLM_API_URL}/chat`, {
-      model: "llama-3.1-8b-instant",
-      message: llmContext
-    });
+    // Call selected reasoning model using reasoning service (no semantic matches for guests)
+    const rawResponse = await ReasoningService.generateResponse(
+      model,
+      finalPrompt,
+      contextMessages,
+      []
+    );
 
-    const llmResponse = formatResponse(apiRes.data);
+    const llmResponse = formatResponse(rawResponse);
 
     // Save bot response in Redis
     await addToRedisContext(currentChat, {
       sender: "bot",
-      text: llmResponse
+      text: llmResponse,
+      parts: [{ type: "text", value: llmResponse }]
     });
 
     return res.json({ message: "Response generated", currentChat, llmResponse });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Server error" });
+    console.error("tempChat error:", err);
+    res.status(500).json({ error: err.message || "Server error" });
   }
 };
 

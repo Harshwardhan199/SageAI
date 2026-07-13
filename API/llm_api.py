@@ -16,15 +16,26 @@ load_dotenv()
 app = FastAPI()
 
 # Text Generation
+class ChatMessage(BaseModel):
+    role: str
+    content: str
+
 class ChatRequest(BaseModel):
     model: str
-    message: str
+    message: str | None = None
+    messages: list[ChatMessage] | None = None
 
 groqClient = Groq(api_key=os.getenv("GROQ_API_KEY"))
 
 # Embeddings
 class EmbedRequest(BaseModel):
     text: str
+
+class TranscribeRequest(BaseModel):
+    audio_url: str
+
+class VisionRequest(BaseModel):
+    image_url: str
 
 API_URL = "https://api-atlas.nomic.ai/v1/embedding/text"
 
@@ -37,8 +48,11 @@ def root():
 @app.post("/chat", response_class=PlainTextResponse)
 def chat(payload: ChatRequest):
     try:
-        response = groqClient.chat.completions.create(
-            messages=[
+        if payload.messages:
+            messages = [{"role": msg.role, "content": msg.content} for msg in payload.messages]
+        else:
+            # Backward compatibility for single string message
+            messages = [
                 {
                     "role": "system", 
                     "content": (
@@ -68,18 +82,18 @@ def chat(payload: ChatRequest):
                 },
                 {
                     "role": "user", 
-                    "content": payload.message
+                    "content": payload.message or ""
                 }
-            ],
-            model=payload.model  
+            ]
+
+        response = groqClient.chat.completions.create(
+            model=payload.model,
+            messages=messages
         )
-
-
-        print(response.choices[0].message.content)
 
         return response.choices[0].message.content
 
-    except requests.exceptions.RequestException as e:
+    except Exception as e:
         return f"Error: {e}"
 
 @app.post("/feedback", response_class=PlainTextResponse)
@@ -106,6 +120,71 @@ def chat(payload: ChatRequest):
     except requests.exceptions.RequestException as e:
         return f"Error: {e}"
 
+@app.post("/transcribe", response_class=PlainTextResponse)
+def transcribe(payload: TranscribeRequest):
+    try:
+        import base64
+        import io
+        if payload.audio_url.startswith("data:"):
+            header, base64_data = payload.audio_url.split(",", 1)
+            audio_bytes = base64.b64decode(base64_data)
+            mime = header.split(";")[0].split(":")[1]
+            ext = mime.split("/")[1] if "/" in mime else "wav"
+            filename = f"audio.{ext}"
+        else:
+            response = requests.get(payload.audio_url)
+            response.raise_for_status()
+            audio_bytes = response.content
+            content_type = response.headers.get("content-type", "")
+            ext = content_type.split("/")[1] if "/" in content_type else "wav"
+            filename = f"audio.{ext}"
+
+        transcription = groqClient.audio.transcriptions.create(
+            file=(filename, audio_bytes),
+            model="whisper-large-v3-turbo"
+        )
+        return transcription.text
+    except Exception as e:
+        return f"Error: {e}"
+
+@app.post("/vision", response_class=PlainTextResponse)
+def vision(payload: VisionRequest):
+    try:
+        response = groqClient.chat.completions.create(
+            model="qwen/qwen3.6-27b",
+            messages=[
+                {
+                    "role": "user",
+                    "content": [
+                        {
+                            "type": "text",
+                            "text": (
+                                "Analyze the image.\n\n"
+                                "Return:\n"
+                                "- detected text\n"
+                                "- UI elements\n"
+                                "- errors\n"
+                                "- code\n"
+                                "- charts\n"
+                                "- diagrams\n"
+                                "- important visual context\n\n"
+                                "Keep it concise."
+                            )
+                        },
+                        {
+                            "type": "image_url",
+                            "image_url": {
+                                "url": payload.image_url
+                            }
+                        }
+                    ]
+                }
+            ]
+        )
+        return response.choices[0].message.content
+    except Exception as e:
+        return f"Error: {e}"
+
 @app.post("/embed")
 async def get_embedding(req: EmbedRequest):
     print("Request recieved")
@@ -123,6 +202,10 @@ async def get_embedding(req: EmbedRequest):
     response = requests.post(API_URL, json=payload, headers=headers)
 
     data = response.json()
+
+    print(response.status_code)
+    print(response.text)
+
     embeddings = np.array(data["embeddings"])
 
     return {"embedding": embeddings[0].tolist()}

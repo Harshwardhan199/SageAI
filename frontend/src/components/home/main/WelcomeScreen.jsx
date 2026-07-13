@@ -8,6 +8,10 @@ const WelcomeScreen = ({
   handlePrompt,
   onHitEnter,
   inputBarRef,
+  selectedImage,
+  setSelectedImage,
+  selectedAudio,
+  setSelectedAudio,
 }) => {
   return (
     <div>
@@ -101,6 +105,10 @@ const WelcomeScreen = ({
           handlePrompt={handlePrompt}
           onHitEnter={onHitEnter}
           inputBarRef={inputBarRef}
+          selectedImage={selectedImage}
+          setSelectedImage={setSelectedImage}
+          selectedAudio={selectedAudio}
+          setSelectedAudio={setSelectedAudio}
         />
       </div>
     </div>
