@@ -10,22 +10,22 @@ const QuizOptions = ({
   return (
     <>
       {quiz.options.map((option, index) => {
-        let borderClass = "";
+        let borderClass = "border-[#2d2d2d] bg-[#171717] text-[#e2e2e2]";
 
         if (state.answered) {
           if (option === quiz.answer) {
-            borderClass = "border border-[#006610]";
+            borderClass = "border-[#10b981] bg-[#10b981]/15 text-[#10b981]";
           } else if (option === state.selectedOption) {
-            borderClass = "border border-[#600000]";
+            borderClass = "border-[#ef4444] bg-[#ef4444]/15 text-[#ef4444]";
           }
         } else if (state.selectedOption === option) {
-          borderClass = "border border-[#404040]";
+          borderClass = "border-[#155dfc] bg-[#155dfc]/10 text-white";
         }
 
         return (
           <label
             key={index}
-            className={`flex gap-2 p-2 rounded-sm border border-[#1c1c1c] ${borderClass}`}
+            className={`flex items-center gap-3 p-3.5 rounded-lg border cursor-pointer hover:bg-[#252525] transition-all duration-150 select-none ${borderClass}`}
           >
             <input
               type="radio"
