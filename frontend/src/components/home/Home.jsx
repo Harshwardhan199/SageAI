@@ -736,18 +736,28 @@ const Home = () => {
       const latestUserHeight =
         latestUserRef.current.getBoundingClientRect().height;
 
-      const height = clampedVisibleHeight - latestUserHeight - 20;
+      const latestBotHeight =
+        latestBotRef.current ? latestBotRef.current.getBoundingClientRect().height : 0;
+
+      const height = clampedVisibleHeight - latestUserHeight - latestBotHeight - 40;
 
       setResponseHeight(height > 0 ? height : 0);
     }
   }, [messages]);
 
-  // Scroll to bottom after messages increase
+  // Scroll to user prompt after messages increase
   useEffect(() => {
-    window.scrollTo({
-      top: document.body.scrollHeight,
-      behavior: "smooth",
-    });
+    if (latestUserRef.current) {
+      latestUserRef.current.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    } else {
+      window.scrollTo({
+        top: document.body.scrollHeight,
+        behavior: "smooth",
+      });
+    }
   }, [messages.length]);
 
   // Logout

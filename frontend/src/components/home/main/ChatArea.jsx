@@ -1,5 +1,3 @@
-// components/home/main/ChatArea.jsx
-
 import Message from "../message/Message";
 import WelcomeScreen from "./WelcomeScreen";
 import PromptInput from "./PromptInput";
@@ -67,10 +65,6 @@ const ChatArea = ({
                 key={msg._id || idx}
                 message={msg}
                 loadSavedPrompts={LoadSavedPrompts}
-                style={{
-                  minHeight:
-                     idx === lastBotIndex ? `${responseHeight}px` : "auto",
-                }}
                 ref={
                   idx === lastUserIndex
                     ? latestUserRef
@@ -80,6 +74,11 @@ const ChatArea = ({
                 }
               />
             ))}
+
+            {/* Spacer to keep space occupied below the bot message */}
+            {messages.length > 0 && lastBotIndex !== -1 && (
+              <div style={{ height: `${responseHeight}px` }} />
+            )}
           </div>
         </div>
       </div>
