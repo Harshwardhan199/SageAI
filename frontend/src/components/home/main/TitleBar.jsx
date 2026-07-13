@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import SavedPromptMenu from "./SavedPromptMenu";
+import { useNavigate } from "react-router-dom";
 
 const TitleBar = ({
   user,
@@ -11,12 +12,12 @@ const TitleBar = ({
   TogglePinPrompt,
   DeletePrompt,
 
-  handleLogOut,
-
   selectedModel,
   setSelectedModel,
   onToggleSidebar,
 }) => {
+  const navigate = useNavigate();
+
   const [showModelDropdown, setShowModelDropdown] = useState(false);
   const dropdownRef = useRef(null);
 
@@ -78,7 +79,9 @@ const TitleBar = ({
             onClick={() => setShowModelDropdown(!showModelDropdown)}
             className="flex items-center justify-between gap-1.5 bg-card-bg text-primary text-xs font-semibold rounded-xl border border-default p-2 px-3 outline-none cursor-pointer hover:bg-hover-bg hover:border-accent transition-all w-[155px] shadow-sm select-none"
           >
-            <span className="truncate">{modelLabels[selectedModel] || "Select Model"}</span>
+            <span className="truncate">
+              {modelLabels[selectedModel] || "Select Model"}
+            </span>
             <svg
               className={`w-3.5 h-3.5 text-secondary transition-transform duration-200 ${
                 showModelDropdown ? "rotate-180" : "rotate-0"
@@ -158,7 +161,7 @@ const TitleBar = ({
         /* Guest */
         <button
           className="flex items-center justify-center gap-2 px-3 py-1.5 bg-card-bg border border-default rounded-full text-primary hover:bg-hover-bg transition-colors cursor-pointer text-sm font-semibold shadow-sm"
-          onClick={handleLogOut}
+          onClick={() => navigate("/loginSignUp")}
         >
           <div className="flex items-center justify-center h-[20px] w-[25px] flex-shrink-0">
             <img
