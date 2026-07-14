@@ -122,7 +122,7 @@ const ChatItem = ({
 
           {chatMenuId === chat._id && (
             <div
-              className="menu-container absolute -left-[15px] top-full flex flex-col gap-1 min-w-23 p-1 bg-card-bg border border-default drop-shadow rounded-lg z-20 text-primary"
+              className="menu-container absolute left-[90%] top-[10%] flex flex-col gap-1 min-w-23 p-1 bg-card-bg border border-default drop-shadow rounded-lg z-20 text-primary"
               onClick={(e) => e.stopPropagation()}
             >
               {/* Rename */}
