@@ -67,12 +67,12 @@ const FolderItem = ({
             <img
               src="https://img.icons8.com/?size=100&id=102729&format=png&color=dddddd"
               alt="Options"
-              className="options-button w-[14px] h-auto flex-shrink-0 mx-2 dark:invert-0 invert"
+              className="options-button w-[14px] h-auto flex-shrink-0 mx-2 theme-icon-light"
             />
 
             {folderMenuId === folder._id && (
               <div
-                className="menu-container absolute -left-[15px] top-full flex flex-col gap-1 p-1 bg-card-bg border border-default drop-shadow rounded-lg z-10 text-primary"
+                className="menu-container absolute left-[90%] -top-[60%] flex flex-col gap-1 p-1 bg-card-bg border border-default drop-shadow rounded-lg z-10 text-primary"
                 onClick={(e) => e.stopPropagation()}
               >
                 <div
