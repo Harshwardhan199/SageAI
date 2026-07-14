@@ -77,7 +77,7 @@ const FolderSection = ({
                 <img
                   src="https://img.icons8.com/?size=100&id=WDLQ4iMx1qkz&format=png&color=ffffff"
                   alt="Create Folder"
-                  className="w-[24px] h-auto dark:invert-0 invert"
+                  className="w-[24px] h-auto theme-icon-light"
                 />
               </div>
 
