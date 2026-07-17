@@ -21,11 +21,16 @@ const getValidAccessToken = async () => {
         {},
         { withCredentials: true }
       );
-      token = res.data.accessToken;
-      authStore.updateAccessToken(token);
-      authStore.setUser(res.data.user);
+      if (res.data.authenticated) {
+        token = res.data.accessToken;
+        authStore.updateAccessToken(token);
+        authStore.setUser(res.data.user);
+      } else {
+        authStore.clearAuth();
+      }
     } catch (err) {
       console.error("Failed to refresh token before request", err);
+      authStore.clearAuth();
     }
   }
   return token;
@@ -54,20 +59,25 @@ api.interceptors.response.use(
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
 
-      console.log("Retring for new access token /refresh");
+      console.log("Retrying for new access token /refresh");
 
       try {
         const res = await axios.post( `${config.BACKEND_URL}/api/auth/refresh`, {}, { withCredentials: true } );
 
-        const newAccessToken = res.data.accessToken;
-        authStore.updateAccessToken(newAccessToken);
+        if (res.data.authenticated) {
+          const newAccessToken = res.data.accessToken;
+          authStore.updateAccessToken(newAccessToken);
 
-        // Retry original request with new token
-        originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
-        return api(originalRequest);
+          // Retry original request with new token
+          originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
+          return api(originalRequest);
+        } else {
+          authStore.clearAuth();
+          return Promise.reject(error);
+        }
       } catch (refreshError) {
         console.error("Token refresh failed:", refreshError);
-        authStore.clear();
+        authStore.clearAuth();
         return Promise.reject(refreshError);
       }
     }
