@@ -12,6 +12,7 @@ import TitleBar from "./main/TitleBar";
 import ChatArea from "./main/ChatArea";
 import Message from "./message/Message";
 import SettingsPanel from "../settings/SettingsPanel";
+import ImageViewer from "../common/ImageViewer";
 
 const Home = () => {
   const navigate = useNavigate();
@@ -85,6 +86,7 @@ const Home = () => {
   const latestBotRef = useRef(null);
 
   const [responseHeight, setResponseHeight] = useState(0);
+  const [previewImage, setPreviewImage] = useState(null);
 
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   // Sidebar Toggle
@@ -573,8 +575,13 @@ const Home = () => {
     const botId = Date.now();
     setMessages((prev) => [
       ...prev,
-      { sender: "user", blocks: [{ type: "chat", content: displayText }] },
-      { sender: "bot", blocks: [{ type: "chat", content: "..." }], _id: botId },
+      { 
+        sender: "user", 
+        role: "user",
+        parts: parts,
+        blocks: [{ type: "chat", content: displayText }] 
+      },
+      { sender: "bot", role: "model", blocks: [{ type: "chat", content: "..." }], _id: botId },
     ]);
 
     if (user) {
@@ -896,6 +903,7 @@ const Home = () => {
             selectedAudio={selectedAudio}
             setSelectedAudio={setSelectedAudio}
             toggleSidebar={toggleSidebar}
+            onImagePreview={setPreviewImage}
           />
         </div>
 
@@ -912,6 +920,12 @@ const Home = () => {
 
         {/* Global Settings Panel Modal */}
         <SettingsPanel isOpen={showSettings} onClose={() => setShowSettings(false)} />
+
+        <ImageViewer
+          open={!!previewImage}
+          image={previewImage}
+          onClose={() => setPreviewImage(null)}
+        />
       </div>
     </>
   );

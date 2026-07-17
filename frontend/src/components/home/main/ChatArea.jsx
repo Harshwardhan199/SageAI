@@ -28,6 +28,7 @@ const ChatArea = ({
   setSelectedImage,
   selectedAudio,
   setSelectedAudio,
+  onImagePreview,
 }) => {
   return (
     <>
@@ -60,6 +61,7 @@ const ChatArea = ({
                 setSelectedImage={setSelectedImage}
                 selectedAudio={selectedAudio}
                 setSelectedAudio={setSelectedAudio}
+                onImagePreview={onImagePreview}
               />
             )}
 
@@ -69,6 +71,7 @@ const ChatArea = ({
                 key={msg._id || idx}
                 message={msg}
                 loadSavedPrompts={LoadSavedPrompts}
+                onImagePreview={onImagePreview}
                 ref={
                   idx === lastUserIndex
                     ? latestUserRef
@@ -89,25 +92,23 @@ const ChatArea = ({
 
       {/* Sticky Input */}
       {messages.length > 0 && (
-        <div className="sticky bottom-0 flex flex-col items-center w-full h-17 bg-background z-2 px-3">
-          <div className="relative flex justify-center w-full">
-            <div className="absolute -top-2 max-w-[780px] w-full">
-              <PromptInput
-                promptText={promptText}
-                setPromptText={setPromptText}
-                handlePrompt={handlePrompt}
-                onHitEnter={onHitEnter}
-                inputBarRef={inputBarRef}
-                selectedImage={selectedImage}
-                setSelectedImage={setSelectedImage}
-                selectedAudio={selectedAudio}
-                setSelectedAudio={setSelectedAudio}
-              />
-            </div>
-
-            <div className="absolute top-10 text-[10px] text-secondary font-medium">
-              SageAI can make mistakes. Check important info.
-            </div>
+        <div className="sticky bottom-0 w-full h-[72px] bg-transparent z-2 px-3 relative flex justify-center">
+          <div className="absolute bottom-7 max-w-[780px] w-full">
+            <PromptInput
+              promptText={promptText}
+              setPromptText={setPromptText}
+              handlePrompt={handlePrompt}
+              onHitEnter={onHitEnter}
+              inputBarRef={inputBarRef}
+              selectedImage={selectedImage}
+              setSelectedImage={setSelectedImage}
+              selectedAudio={selectedAudio}
+              setSelectedAudio={setSelectedAudio}
+              onImagePreview={onImagePreview}
+            />
+          </div>
+          <div className="absolute bottom-2 text-[10px] text-secondary font-medium select-none text-center">
+            SageAI can make mistakes. Check important info.
           </div>
         </div>
       )}
