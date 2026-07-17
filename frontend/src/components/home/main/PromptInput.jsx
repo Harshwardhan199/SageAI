@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { Mic, MicOff } from "lucide-react";
+import { Mic, MicOff, Plus } from "lucide-react";
 import { toast } from "react-toastify";
 
 const PromptInput = ({
@@ -246,7 +246,7 @@ const PromptInput = ({
       };
 
   return (
-    <div className="relative w-full rounded-xl bg-[#fafafa] dark:bg-[#0d0d0d] text-primary shadow-lg border border-default dark:border-zinc-700 transition-all duration-200">
+    <div className="relative w-full rounded-xl bg-card-bg text-primary shadow-lg border border-default transition-all duration-200">
       {/* Hidden File Input */}
       <input
         type="file"
@@ -305,14 +305,10 @@ const PromptInput = ({
         >
           <div
             onClick={() => document.getElementById("file-upload").click()}
-            className="hover:bg-hover-bg p-2 rounded-lg cursor-pointer transition-colors flex items-center justify-center w-[34px] h-[34px]"
+            className="hover:bg-hover-bg p-2 rounded-lg cursor-pointer transition-colors flex items-center justify-center w-[34px] h-[34px] group"
             title="Attach Files (Image or Audio)"
           >
-            <img
-              src="https://img.icons8.com/?size=100&id=354k6pS0PoMI&format=png&color=1A1A1A"
-              alt="Attach Files"
-              className="w-[18px] h-auto dark:invert invert-0"
-            />
+            <Plus className="w-[18px] h-[18px] text-secondary group-hover:text-primary transition-colors" />
           </div>
         </div>
 
@@ -346,7 +342,7 @@ const PromptInput = ({
             <button
               type="button"
               disabled
-              className="p-2 rounded-lg opacity-40 cursor-not-allowed text-secondary flex items-center justify-center border-none bg-transparent outline-none w-[34px] h-[34px]"
+              className="p-2 rounded-lg opacity-40 cursor-not-allowed text-zinc-400 dark:text-zinc-600 flex items-center justify-center border-none bg-transparent outline-none w-[34px] h-[34px]"
               title="Live speech recognition is not supported in this browser"
             >
               <MicOff className="w-[18px] h-[18px]" />
@@ -373,10 +369,10 @@ const PromptInput = ({
             <button
               type="button"
               onClick={toggleListening}
-              className="hover:bg-hover-bg p-2 rounded-lg cursor-pointer transition-colors text-primary flex items-center justify-center border-none bg-transparent outline-none w-[34px] h-[34px]"
+              className="hover:bg-hover-bg p-2 rounded-lg cursor-pointer transition-colors flex items-center justify-center border-none bg-transparent outline-none w-[34px] h-[34px] group"
               title="Start voice dictation"
             >
-              <Mic className="w-[18px] h-[18px] text-zinc-700 dark:text-zinc-300" />
+              <Mic className="w-[18px] h-[18px] text-secondary group-hover:text-primary transition-colors" />
             </button>
           )}
 
