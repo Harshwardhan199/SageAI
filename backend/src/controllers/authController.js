@@ -185,30 +185,51 @@ const refresh = async (req, res) => {
     try {
         const refreshToken = req.cookies.refreshToken;
         
-        if (!refreshToken) return res.status(401).json({ message: "No refresh token" });
+        if (!refreshToken) {
+            return res.status(200).json({ authenticated: false });
+        }
 
         jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET, async (err, decoded) => {
-            if (err) return res.status(403).json({ message: "Invalid refresh token" });
+            if (err) {
+                res.clearCookie("refreshToken", {
+                    httpOnly: true,
+                    secure: true,
+                    sameSite: "None"
+                });
+                if (err.name === 'TokenExpiredError') {
+                    return res.status(200).json({ authenticated: false });
+                }
+                console.warn("Invalid/tampered refresh token signature:", err.message);
+                return res.status(200).json({ authenticated: false });
+            }
 
             const userFromDB = await User.findById(decoded.userId);
-            if (!userFromDB) return res.status(404).json({ message: "User not found" });
+            if (!userFromDB) {
+                res.clearCookie("refreshToken", {
+                    httpOnly: true,
+                    secure: true,
+                    sameSite: "None"
+                });
+                console.warn("Refresh token belongs to non-existent user:", decoded.userId);
+                return res.status(200).json({ authenticated: false });
+            }
 
             userFromDB.tokenVersion += 1;
             await userFromDB.save();
 
             const accessToken = jwt.sign({ userId: userFromDB._id, username: userFromDB.username, email: userFromDB.email, tokenVersion: userFromDB.tokenVersion }, process.env.JWT_SECRET, { expiresIn: process.env.JWT_EXPIRES_IN });
-            const refreshToken = jwt.sign({ userId: userFromDB._id, tokenVersion: userFromDB.tokenVersion }, process.env.JWT_REFRESH_SECRET, { expiresIn: process.env.JWT_REFRESH_EXPIRES_IN });
+            const newRefreshToken = jwt.sign({ userId: userFromDB._id, tokenVersion: userFromDB.tokenVersion }, process.env.JWT_REFRESH_SECRET, { expiresIn: process.env.JWT_REFRESH_EXPIRES_IN });
 
-            res.cookie("refreshToken", refreshToken, {
+            res.cookie("refreshToken", newRefreshToken, {
                 httpOnly: true,
                 secure: true,
                 sameSite: "None",
                 maxAge: 7 * 24 * 60 * 60 * 1000
             });
 
-            //Swnd AccessToken with response
+            // Send AccessToken with response
             res.status(200).json({
-                message: "Refresh successful",
+                authenticated: true,
                 user: { username: userFromDB.username, email: userFromDB.email },
                 accessToken
             });

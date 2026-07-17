@@ -45,9 +45,13 @@ export const AuthProvider = ({ children }) => {
         { withCredentials: true },
       );
 
-      updateAccessToken(res.data.accessToken);
-      setUser(res.data.user);
-      setIsAuthenticated(true);
+      if (res.data.authenticated) {
+        updateAccessToken(res.data.accessToken);
+        setUser(res.data.user);
+        setIsAuthenticated(true);
+      } else {
+        clearAuth();
+      }
     } catch (err) {
       clearAuth();
       console.error(err);
