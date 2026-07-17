@@ -321,7 +321,7 @@ const PromptInput = ({
           onKeyDown={handleKeyDown}
           rows={1}
           style={{ gridArea: "textarea" }}
-          className="w-full resize-none bg-transparent border-none outline-none focus:outline-none focus:ring-0 text-xs sm:text-sm leading-relaxed text-black dark:text-white placeholder:text-secondary overflow-x-hidden overflow-y-hidden py-1.5 px-2 font-sans self-center"
+          className="w-full resize-none bg-transparent border-none outline-none focus:outline-none focus:ring-0 text-xs sm:text-sm leading-relaxed text-primary placeholder:text-secondary overflow-x-hidden overflow-y-hidden py-1.5 px-2 font-sans self-center"
         />
 
         {/* Horizontal Divider Line */}
