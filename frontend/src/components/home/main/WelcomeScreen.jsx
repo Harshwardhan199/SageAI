@@ -11,6 +11,7 @@ const WelcomeScreen = ({
   setSelectedImage,
   selectedAudio,
   setSelectedAudio,
+  onImagePreview,
 }) => {
   const { accentColor } = useTheme();
 
@@ -142,6 +143,7 @@ const WelcomeScreen = ({
           setSelectedImage={setSelectedImage}
           selectedAudio={selectedAudio}
           setSelectedAudio={setSelectedAudio}
+          onImagePreview={onImagePreview}
         />
       </div>
     </div>

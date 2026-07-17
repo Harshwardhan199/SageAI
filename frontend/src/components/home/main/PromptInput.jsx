@@ -12,6 +12,7 @@ const PromptInput = ({
   setSelectedImage,
   selectedAudio,
   setSelectedAudio,
+  onImagePreview,
 }) => {
   const [isListening, setIsListening] = useState(false);
   const [isPermissionDenied, setIsPermissionDenied] = useState(false);
@@ -109,10 +110,8 @@ const PromptInput = ({
   };
 
   const startListening = () => {
-    if (isPermissionDenied) {
-      toast.error("Microphone permission was denied. Please enable it in browser settings.");
-      return;
-    }
+    setIsListening(true);
+    setIsPermissionDenied(false);
 
     try {
       const rec = new SpeechRecognition();
@@ -121,18 +120,17 @@ const PromptInput = ({
       rec.lang = "en-US";
 
       rec.onstart = () => {
-        setIsListening(true);
         stableTextRef.current = promptText;
-        lastProcessedFinalIndexRef.current = -1;
         currentResultsLengthRef.current = 0;
+        lastProcessedFinalIndexRef.current = -1;
       };
 
       rec.onresult = (event) => {
-        currentResultsLengthRef.current = event.results.length;
-        
-        let newFinals = "";
         let currentInterim = "";
-        
+        let newFinals = "";
+
+        currentResultsLengthRef.current = event.results.length;
+
         for (let i = 0; i < event.results.length; i++) {
           const result = event.results[i];
           if (result.isFinal) {
@@ -260,13 +258,14 @@ const PromptInput = ({
 
       {/* File Previews */}
       {(selectedImage || selectedAudio) && (
-        <div className="flex flex-wrap gap-2 p-2 bg-hover-bg/30 border-b border-default rounded-t-xl">
+        <div className="flex flex-wrap gap-2 p-2 bg-hover-bg/30 border-b border-default rounded-t-xl select-none">
           {selectedImage && (
-            <div className="relative w-14 h-14 border border-default rounded-lg overflow-hidden group bg-hover-bg shadow-sm">
+            <div className="relative w-14 h-14 border border-default rounded-lg overflow-hidden group bg-hover-bg shadow-sm flex-shrink-0">
               <img
                 src={selectedImage}
                 alt="Preview"
-                className="w-full h-full object-cover"
+                className="w-full h-full object-cover cursor-pointer hover:brightness-95 transition-all"
+                onClick={() => onImagePreview && onImagePreview(selectedImage)}
               />
               <button
                 type="button"
@@ -278,7 +277,7 @@ const PromptInput = ({
             </div>
           )}
           {selectedAudio && (
-            <div className="relative flex items-center gap-2 p-1.5 px-2.5 border border-default rounded-lg bg-hover-bg shadow-sm text-xs max-w-xs">
+            <div className="relative flex items-center gap-2 p-1.5 px-2.5 border border-default rounded-lg bg-hover-bg shadow-sm text-xs max-w-xs flex-shrink-0">
               <span className="text-[11px] text-primary font-medium truncate max-w-[120px]">
                 🎵 Audio Attached
               </span>

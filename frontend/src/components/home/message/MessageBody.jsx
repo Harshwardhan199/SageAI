@@ -4,21 +4,31 @@ import CodeBlock from "./CodeBlock";
 import QuizBlock from "./QuizBlock";
 import MarkdownBlock from "./MarkdownBlock";
 import useTheme from "../../../hooks/useTheme";
+import UserImageAttachment from "../../common/UserImageAttachment";
 
-const MessageBody = ({ message, isUser }) => {
+const MessageBody = ({ message, isUser, onImagePreview }) => {
   const { blocks } = message;
   const { enableMarkdown, animateAI } = useTheme();
-
-  if (isUser) {
-    return blocks && blocks.length > 0 ? blocks[0].content : "";
-  }
 
   if (!blocks || !Array.isArray(blocks)) {
     return null;
   }
 
+  const assistantImagePart = message.parts && message.parts.find(p => p.type === "image");
+
   return (
-    <>
+    <div className="flex flex-col gap-2 max-w-full">
+      {assistantImagePart && (
+        <div
+          className="self-start w-fit bg-transparent border border-default dark:border-zinc-800 p-1.5 shadow-sm rounded-xl cursor-pointer hover:brightness-95 hover:scale-[1.02] active:scale-[0.99] transition-all duration-200 flex items-center justify-center flex-shrink-0"
+          onClick={() => onImagePreview && onImagePreview(assistantImagePart.url)}
+        >
+          <UserImageAttachment
+            src={assistantImagePart.url}
+            onClick={() => onImagePreview && onImagePreview(assistantImagePart.url)}
+          />
+        </div>
+      )}
       {blocks.map((block, index) => {
         switch (block.type) {
           case "chat": {
@@ -88,7 +98,7 @@ const MessageBody = ({ message, isUser }) => {
             return null; // ignore unknown block types gracefully
         }
       })}
-    </>
+    </div>
   );
 };
 
