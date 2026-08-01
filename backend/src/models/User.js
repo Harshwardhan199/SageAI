@@ -9,7 +9,6 @@ const userSchema = new mongoose.Schema({
   },
   authProvider: { type: String },
   googleId: { type: String },
-  tokenVersion: { type: Number, default: 0 },
 
   // NEW: Track currently active chat
   currentChatId: { type: mongoose.Schema.Types.ObjectId, ref: "Chat", default: null },

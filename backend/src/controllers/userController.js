@@ -1,15 +1,15 @@
 const User = require("../models/User");
-const Folder = require("../models/Folder");
 const Chat = require("../models/Chat");
 const Message = require("../models/Messasge");
 const Prompt = require("../models/Prompt");
+const ProjectService = require("../services/project/projectService");
+const { extractBlocks } = require("../utils/blockExtractor");
 
 const { getRedis } = require("../db");
 
 const getCurrentUser = async (req, res) => {
   try {
     const user = await User.findById(req.user.userId).select("username email");
-
     if (!user) return res.status(404).json({ error: "User not found" });
 
     res.json({ username: user.username, email: user.email });
@@ -19,200 +19,66 @@ const getCurrentUser = async (req, res) => {
   }
 };
 
-const createFolder = async (req, res) => {
-  try {
-    const user = await User.findById(req.user.userId);
-
-    if (!user) return res.status(404).json({ error: "User not found" });
-
-    const { name, color, isPinned } = req.body;
-    if (!name) return res.status(400).json({ error: "Folder name is required" });
-
-    const folder = await Folder.create({
-      userId: req.user.userId,
-      name: name.trim(),
-      color: color || "#ffffff",
-      isPinned: isPinned || false,
-    });
-
-    res.json({ message: "Folder Created Successfully", folder });
-  } catch (err) {
-    res.status(500).json({ error: "Server error" });
-  }
-};
-
-const updateFolder = async (req, res) => {
-  try {
-    const user = await User.findById(req.user.userId);
-
-    if (!user) return res.status(404).json({ error: "User not found" });
-
-    const { folderId, name, color } = req.body;
-    if (!folderId) return res.status(400).json({ error: "Folder ID is required" });
-    if (!name) return res.status(400).json({ error: "Folder name is required" });
-
-    const folder = await Folder.findOneAndUpdate(
-      { _id: folderId, userId: req.user.userId },
-      { name: name.trim(), color: color || "#ffffff" },
-      { new: true }
-    );
-
-    if (!folder) {
-      return res.status(404).json({ error: "Folder not found or not authorized" });
-    }
-
-    res.json({ message: "Folder Updated Successfully", folder });
-  } catch (err) {
-    console.error("Update folder error:", err);
-    res.status(500).json({ error: "Server error" });
-  }
-};
-
-const deleteFolder = async (req, res) => {
-
-  try {
-    const user = await User.findById(req.user.userId);
-
-    if (!user) return res.status(404).json({ error: "User not found" });
-
-    const { folderId } = req.body;
-
-    if (!folderId) return res.status(400).json({ error: "Folder ID is required" });
-
-    const folder = await Folder.findOneAndDelete({ _id: folderId, userId: user._id });
-
-    if (!folder) {
-      return res.status(404).json({ error: "Folder not found or not authorized" });
-    }
-
-    const folderChats = await Chat.find({ userId: user._id, folderId: folderId });
-
-    for (const entry of folderChats){
-      const chat = await Chat.findOneAndDelete({ _id: entry._id, userId: user._id });
-
-      if (!chat) {
-        return res.status(404).json({ error: "Chat not found or not authorized" });
-      }
-
-      // Also delete related messages
-      await Message.deleteMany({ chatId: chat._id });
-
-      // Delete Redis context for this chat
-      const redis = getRedis();
-      await redis.del(`chat_context:${chat._id}`);
-    };
-
-    res.json({ message: "Folder Deleted  Successfully" });
-  } catch (err) {
-    res.status(500).json({ error: "Server error" });
-  }
-};
-
-const getUserFolders = async (req, res) => {
-  try {
-    const user = await User.findById(req.user.userId);
-
-    if (!user) return res.status(404).json({ error: "User not found" });
-
-    // Fetch Folders
-    //const folderList = await Folder.find({ userId: req.user.userId }).sort({ createdAt: -1 }).lean();
-    const folderList = await Folder.find({ userId: req.user.userId }, { _id: 1, name: 1, color: 1 }).sort({ createdAt: -1 }).lean();
-
-    const folderIds = folderList.map(f => f._id);
-
-    //Fetch Chats by Folder
-    const chatsByFolder = await Chat.aggregate([
-      { $match: { userId: user._id, folderId: { $in: folderIds } } },
-      { $sort: { createdAt: -1 } },
-      {
-        $group: {
-          _id: "$folderId",
-          chats: { $push: { _id: "$_id", title: "$title" } }
-        }
-      },
-      {
-        $project: {
-          chats: { $slice: ["$chats", 10] }
-        }
-      }
-    ]);
-
-    const chatsMap = {};
-    chatsByFolder.forEach(entry => {
-      chatsMap[entry._id.toString()] = entry.chats;
-    });
-
-    const foldersWithChats = folderList.map(folder => ({
-      _id: folder._id,
-      name: folder.name,
-      color: folder.color,
-      chats: chatsMap[folder._id.toString()] || []
-    }));
-
-    res.json({ folders: foldersWithChats });
-  } catch (err) {
-    res.status(500).json({ error: "Server error" });
-  }
-};
-
 const moveChat = async (req, res) => {
   try {
     const user = await User.findById(req.user.userId);
-
     if (!user) return res.status(404).json({ error: "User not found" });
 
-    const { chatId, folderId } = req.body;
+    const { chatId, projectId } = req.body;
+    let targetProjectId = projectId;
 
     if (!chatId) return res.status(400).json({ error: "Chat ID is required" });
 
     const chat = await Chat.findOne({ _id: chatId, userId: user._id });
-
     if (!chat) {
       return res.status(404).json({ error: "Chat not found or not authorized" });
     }
 
-    chat.folderId = folderId;
+    if (!targetProjectId) {
+      const defaultProject = await ProjectService.getOrCreateDefaultProject(user._id);
+      targetProjectId = defaultProject._id;
+    }
+
+    chat.projectId = targetProjectId;
     await chat.save();
 
-    res.json({ message: "Chat moved  Successfully", chat });
+    // Update message projectIds for project RAG scoping
+    await Message.updateMany({ chatId: chat._id }, { projectId: targetProjectId });
+
+    res.json({ message: "Chat moved successfully", chat });
   } catch (err) {
+    console.error("moveChat error:", err);
     res.status(500).json({ error: "Server error" });
   }
 };
 
 const deleteChat = async (req, res) => {
   try {
-
-    console.log("Chat Deleted Req recieved");
-
     const user = await User.findById(req.user.userId);
-
     if (!user) return res.status(404).json({ error: "User not found" });
 
     const { chatId } = req.body;
-
     if (!chatId) return res.status(400).json({ error: "Chat ID is required" });
 
     const chat = await Chat.findOneAndDelete({ _id: chatId, userId: user._id });
-
     if (!chat) {
       return res.status(404).json({ error: "Chat not found or not authorized" });
     }
 
-    // Also delete related messages
+    // Delete related messages
     await Message.deleteMany({ chatId: chat._id });
 
-    console.log("Chat Deleted from MongoDB");
-
     // Delete Redis context for this chat
-    const redis = getRedis();
-    const resd = await redis.del(`chat_context:${chat._id}`);
-    console.log("Chat Delete res: ", resd);
+    try {
+      const redis = getRedis();
+      await redis.del(`chat_context:${chat._id}`);
+    } catch (err) {
+      console.warn("Redis delete error during chat deletion:", err.message);
+    }
 
-    console.log("Chat Deleted  Successfully");
-
-    res.json({ message: "Chat Deleted  Successfully" });
+    res.json({ message: "Chat deleted successfully" });
   } catch (err) {
+    console.error("deleteChat error:", err);
     res.status(500).json({ error: "Server error" });
   }
 };
@@ -222,29 +88,48 @@ const getUngroupedChats = async (req, res) => {
     const user = await User.findById(req.user.userId);
     if (!user) return res.status(404).json({ error: "User not found" });
 
-    // Fetch only chats not in any folder
-    const ungroupedChats = await Chat.find({ userId: user._id, folderId: null }).sort({ lastMessageAt: -1 }).select({ _id: 1, title: 1 }).lean();
+    const defaultProject = await ProjectService.getOrCreateDefaultProject(user._id);
+
+    // Fetch chats belonging ONLY to default project or legacy chats without project assignment
+    const ungroupedChats = await Chat.find({
+      userId: user._id,
+      $or: [
+        { projectId: defaultProject._id },
+        { projectId: null }
+      ]
+    })
+      .sort({ lastMessageAt: -1, createdAt: -1 })
+      .select({ _id: 1, title: 1, projectId: 1, lastMessageAt: 1 })
+      .lean();
 
     res.json({ ungroupedChats });
   } catch (err) {
-    console.error(err);
+    console.error("getUngroupedChats error:", err);
     res.status(500).json({ error: "Server error" });
   }
 };
 
 const getChat = async (req, res) => {
   try {
-
     const user = await User.findById(req.user.userId);
     if (!user) return res.status(404).json({ error: "User not found" });
 
     const { chatId } = req.body;
 
-    // retrive messages 
-    const messages = await Message.find({ chatId }).sort({ createdAt: 1 })
+    // Retrieve messages (excluding heavy embedding arrays from network payload)
+    const messages = await Message.find({ chatId }).select("-embedding").sort({ createdAt: 1 });
 
     const formattedMessages = messages.map(msg => {
       const msgObj = msg.toObject ? msg.toObject() : msg;
+      
+      // Auto-expand raw JSON string blocks if stored during earlier streams
+      if (msgObj.blocks && msgObj.blocks.length === 1 && msgObj.blocks[0].type === "chat") {
+        const rawContent = msgObj.blocks[0].content;
+        if (typeof rawContent === "string" && rawContent.trim().startsWith("{")) {
+          msgObj.blocks = extractBlocks(rawContent);
+        }
+      }
+
       if (!msgObj.blocks || msgObj.blocks.length === 0) {
         if (msgObj.type && msgObj.content) {
           if (msgObj.type === "quiz") {
@@ -299,6 +184,7 @@ const getChat = async (req, res) => {
     res.status(200).json({ messages: formattedMessages });
 
   } catch (err) {
+    console.error("getChat error:", err);
     res.status(500).json({ error: "Server error" });
   }
 };
@@ -322,8 +208,7 @@ const savePrompt = async (req, res) => {
   }
 };
 
-const getPrompts   = async (req, res) => {
-
+const getPrompts = async (req, res) => {
   try {
     const user = await User.findById(req.user.userId);
     if (!user) return res.status(404).json({ error: "User not found" });
@@ -375,7 +260,7 @@ const deletePrompt = async (req, res) => {
     const prompt = await Prompt.findOneAndDelete({ _id: promptId });
     if (!prompt) return res.status(404).json({ error: "Prompt not found" });
 
-    res.json({ message: "Prompt deleted sucessfully" });
+    res.json({ message: "Prompt deleted successfully" });
   } catch (error) {
     res.status(500).json({ error: "Server error" });
   }
@@ -407,4 +292,15 @@ const renameChat = async (req, res) => {
   }
 };
 
-module.exports = { getCurrentUser, createFolder, updateFolder, deleteFolder, getUserFolders, getChat, moveChat, deleteChat, getUngroupedChats, savePrompt, getPrompts, togglePinPrompt, deletePrompt, renameChat}; 
+module.exports = {
+  getCurrentUser,
+  getChat,
+  moveChat,
+  deleteChat,
+  getUngroupedChats,
+  savePrompt,
+  getPrompts,
+  togglePinPrompt,
+  deletePrompt,
+  renameChat
+};

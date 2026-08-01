@@ -1,5 +1,5 @@
 import SidebarHeader from "./SidebarHeader";
-import FolderSection from "./FolderSection";
+import ProjectSection from "./ProjectSection";
 import ChatSection from "./ChatSection";
 import UserSection from "./UserSection";
 
@@ -14,15 +14,15 @@ const Sidebar = ({
 
   refSidebar,
   refLogo,
-  refFoldersExpandBtn,
+  refProjectsExpandBtn,
   refChatsExpandBtn,
 
-  // Folder
-  folders,
-  showFolders,
-  foldersWindowHeight,
-  openFolders,
-  folderMenuId,
+  // Projects
+  projects,
+  showProjects,
+  projectsWindowHeight,
+  openProjects,
+  projectMenuId,
 
   // Chats
   chats,
@@ -41,12 +41,12 @@ const Sidebar = ({
 
   handleNewChat,
 
-  ToggleFolderList,
-  OpenFolder,
-  toggleFolderMenu,
-  handleFolderDelete,
-  CreateFolderPopup,
-  handleFolderCustomize,
+  ToggleProjectList,
+  OpenProject,
+  toggleProjectMenu,
+  handleProjectDelete,
+  CreateProjectPopup,
+  handleProjectCustomize,
 
   ToggleChatList,
   OpenChat,
@@ -117,31 +117,31 @@ const Sidebar = ({
               !toggleSidebar ? "opacity-0" : "opacity-100"
             }`}
           >
-            <FolderSection
-              folders={folders}
-              openFolders={openFolders}
-              showFolders={showFolders}
-              foldersWindowHeight={foldersWindowHeight}
-              folderMenuId={folderMenuId}
+            <ProjectSection
+              projects={projects}
+              openProjects={openProjects}
+              showProjects={showProjects}
+              projectsWindowHeight={projectsWindowHeight}
+              projectMenuId={projectMenuId}
               chatMenuId={chatMenuId}
-              refFoldersExpandBtn={refFoldersExpandBtn}
-              ToggleFolderList={ToggleFolderList}
-              OpenFolder={OpenFolder}
-              toggleFolderMenu={toggleFolderMenu}
+              refProjectsExpandBtn={refProjectsExpandBtn}
+              ToggleProjectList={ToggleProjectList}
+              OpenProject={OpenProject}
+              toggleProjectMenu={toggleProjectMenu}
               toggleChatMenu={toggleChatMenu}
-              handleFolderDelete={handleFolderDelete}
+              handleProjectDelete={handleProjectDelete}
               handleChatDelete={handleChatDelete}
               handleMoveChat={handleMoveChat}
               handleChatRename={handleChatRename}
               OpenChat={OpenChat}
-              CreateFolderPopup={CreateFolderPopup}
-              handleFolderCustomize={handleFolderCustomize}
+              CreateProjectPopup={CreateProjectPopup}
+              handleProjectCustomize={handleProjectCustomize}
             />
 
             <ChatSection
               chats={chats}
-              folders={folders}
-              showFolders={showFolders}
+              projects={projects}
+              showProjects={showProjects}
               showChats={showChats}
               chatsWindowHeight={chatsWindowHeight}
               chatMenuId={chatMenuId}

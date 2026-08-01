@@ -1,23 +1,16 @@
 import ChatItem from "./ChatItem";
 
 const ChatSection = ({
-  chats,
-  folders,
-
-  showFolders,
-  showChats,
-  chatsWindowHeight,
-
+  chats = [],
+  projects = [],
+  showProjects = true,
+  showChats = true,
+  chatsWindowHeight = "auto",
   chatMenuId,
-
   refChatsExpandBtn,
-
   ToggleChatList,
-
   toggleChatMenu,
-
   OpenChat,
-
   handleChatDelete,
   handleMoveChat,
   handleChatRename,
@@ -28,10 +21,10 @@ const ChatSection = ({
       {chats.length > 0 && (
         <div
           className={`flex items-center justify-between w-full rounded-xl bg-transparent py-2 text-sm text-primary font-bold transition-all duration-100 ease-in-out ${
-            showFolders ? "mt-[10px]" : "mt-[0px]"
+            showProjects ? "mt-[10px]" : "mt-[0px]"
           }`}
         >
-          <div>Chats</div>
+          <div>Recent Chats</div>
 
           <div className="flex items-center justify-center gap-1">
             <button
@@ -61,8 +54,8 @@ const ChatSection = ({
             <ChatItem
               key={chat._id}
               chat={chat}
-              folders={folders}
-              currentFolder={null}
+              projects={projects}
+              currentProject={null}
               chatMenuId={chatMenuId}
               toggleChatMenu={toggleChatMenu}
               OpenChat={OpenChat}

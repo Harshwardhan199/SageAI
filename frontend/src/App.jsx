@@ -17,6 +17,9 @@ function App() {
       <Router>
         <Routes>
           <Route path="/" element={<Home />} />
+          <Route path="/c/:chatId" element={<Home />} />
+          <Route path="/p/:projectId" element={<Home />} />
+          <Route path="/settings" element={<Home initialShowSettings={true} />} />
           <Route path="/loginSignUp" element={<LoginSignUp />} />
         </Routes>
       </Router>

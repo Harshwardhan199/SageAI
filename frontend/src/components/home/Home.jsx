@@ -1,29 +1,31 @@
 import { useLayoutEffect, useRef, useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import axios from "axios";
 
 import api from "../../api/axios";
 import { useAuth } from "../../context/AuthContext";
 import { config } from "../../config";
+import { projectService } from "../../services/projectService";
+import { chatService } from "../../services/chatService";
 
 import Sidebar from "./sidebar/Sidebar";
-import FolderPopup from "./sidebar/FolderPopup";
+import ProjectPopup from "./sidebar/ProjectPopup";
 import TitleBar from "./main/TitleBar";
 import ChatArea from "./main/ChatArea";
 import Message from "./message/Message";
 import SettingsPanel from "../settings/SettingsPanel";
 import ImageViewer from "../common/ImageViewer";
 
-const Home = () => {
+const Home = ({ initialShowSettings = false }) => {
   const navigate = useNavigate();
+  const { chatId: urlChatId, projectId: urlProjectId } = useParams();
 
   // User
   const { accessToken, clearAuth, user, setUser } = useAuth();
   const [username, setUsername] = useState("");
 
   // Settings Panel
-  const [showSettings, setShowSettings] = useState(false);
-
+  const [showSettings, setShowSettings] = useState(initialShowSettings);
 
   // Sidebar Toggle
   const refSidebar = useRef(null);
@@ -31,14 +33,14 @@ const Home = () => {
   const [sidebarHover, setSidebarHover] = useState(false);
   const [leftSideToggleClicked, setLeftSideToggleClicked] = useState(false);
 
-  // Other ref's in Sidebar
+  // Other refs in Sidebar
   const refLogo = useRef(null);
 
   // State for Saved Prompts
   const [savedPrompts, setSavedPrompts] = useState([]);
   const [showSavedPrompts, setShowSavedPrompts] = useState(false);
 
-  // Ungrouped Chats
+  // Standalone / Ungrouped Chats
   const [showChats, setShowChats] = useState(true);
   const [chatsWindowHeight, setChatWindowHeight] = useState("0px");
 
@@ -46,26 +48,26 @@ const Home = () => {
   const [chatsCount, setChatsCount] = useState(0);
 
   const [chatMenuId, setChatMenuId] = useState(null);
-
   const refChatsExpandBtn = useRef(null);
 
-  // All Folders
-  const [showFolders, setShowFolders] = useState(true);
-  const [foldersWindowHeight, setFoldersWindowHeight] = useState("0px");
+  // All Projects
+  const [showProjects, setShowProjects] = useState(true);
+  const [projectsWindowHeight, setProjectsWindowHeight] = useState("0px");
 
-  const [folders, setFolders] = useState([]);
+  const [projects, setProjects] = useState([]);
+  const [projectMenuId, setProjectMenuId] = useState(null);
 
-  const [folderMenuId, setFolderMenuId] = useState(null);
+  const [projectPopup, setProjectPopup] = useState(false);
+  const [projectName, setProjectName] = useState("");
+  const [projectColor, setProjectColor] = useState("");
+  const [projectDescription, setProjectDescription] = useState("");
+  const [projectSharedContext, setProjectSharedContext] = useState("");
+  const [editingProjectId, setEditingProjectId] = useState(null);
 
-  const [folderPopup, setFolderPopup] = useState(false);
-  const [folderName, setFolderName] = useState("");
-  const [folderColor, setFolderColor] = useState("");
-  const [editingFolderId, setEditingFolderId] = useState(null);
+  const refProjectsExpandBtn = useRef(null);
 
-  const refFoldersExpandBtn = useRef(null);
-
-  // Folder's Chats
-  const [openFolders, setOpenFolders] = useState({});
+  // Project Chats Accordion Open State
+  const [openProjects, setOpenProjects] = useState({});
 
   // Current chat and its messages
   const [currentChat, setCurrentChat] = useState("");
@@ -89,13 +91,12 @@ const Home = () => {
   const [previewImage, setPreviewImage] = useState(null);
 
   const [showProfileMenu, setShowProfileMenu] = useState(false);
+
   // Sidebar Toggle
   const LeftSideToggle = () => {
     if (!leftSideToggleClicked) {
       setLeftSideToggleClicked(true);
-
       setToggleSidebar(!toggleSidebar);
-
       setSidebarHover(false);
     }
   };
@@ -103,10 +104,11 @@ const Home = () => {
   const RightSideToggle = () => {
     setToggleSidebar(!toggleSidebar);
 
-    // OnClick change image to logo
-    refLogo.current.style.width = "40px";
-    refLogo.current.style.height = "40px";
-    refLogo.current.src = "/logo-nobg.png";
+    if (refLogo.current) {
+      refLogo.current.style.width = "40px";
+      refLogo.current.style.height = "40px";
+      refLogo.current.src = "/logo-nobg.png";
+    }
 
     setLeftSideToggleClicked(false);
 
@@ -118,9 +120,8 @@ const Home = () => {
   };
 
   const handleMouseEnter = () => {
-    const sidebarWidth = refSidebar.current.getBoundingClientRect().width;
-
-    if (sidebarWidth == 58 && leftSideToggleClicked == false) {
+    const sidebarWidth = refSidebar.current?.getBoundingClientRect().width;
+    if (sidebarWidth === 58 && !leftSideToggleClicked) {
       setSidebarHover(true);
     }
   };
@@ -134,12 +135,24 @@ const Home = () => {
   useEffect(() => {
     if (user) {
       setUsername(user.username);
-
-      LoadFolders();
+      LoadProjects();
       LoadChats();
       LoadSavedPrompts();
     }
   }, [user]);
+
+  // Synchronize state from URL parameters (/c/:chatId or /p/:projectId)
+  useEffect(() => {
+    if (urlChatId && urlChatId !== currentChat) {
+      setCurrentChat(urlChatId);
+      chatService.getChatMessages(urlChatId)
+        .then(msgs => setMessages(msgs))
+        .catch(err => console.error("Error loading chat from URL:", err));
+    } else if (!urlChatId && !urlProjectId && currentChat) {
+      setCurrentChat("");
+      setMessages([]);
+    }
+  }, [urlChatId, urlProjectId]);
 
   // Close menu on outside click
   useEffect(() => {
@@ -148,7 +161,7 @@ const Home = () => {
         !event.target.closest(".menu-container") &&
         !event.target.closest(".options-button")
       ) {
-        setFolderMenuId(null);
+        setProjectMenuId(null);
         setChatMenuId(null);
       }
     };
@@ -159,272 +172,220 @@ const Home = () => {
     };
   }, []);
 
-  // Folder Creation Popup Toggle
-  const CreateFolderPopup = () => {
-    setFolderName("");
-    setFolderColor("");
-    setEditingFolderId(null);
-    setFolderPopup(!folderPopup);
+  // Project Creation Popup Toggle
+  const CreateProjectPopup = () => {
+    setProjectName("");
+    setProjectColor("");
+    setProjectDescription("");
+    setProjectSharedContext("");
+    setEditingProjectId(null);
+    setProjectPopup(!projectPopup);
   };
 
-  // Customize/Edit Folder Popup Setup
-  const handleFolderCustomize = (folder) => {
-    setEditingFolderId(folder._id);
-    setFolderName(folder.name);
-    setFolderColor(folder.color);
-    setFolderPopup(true);
-    toggleFolderMenu(null);
+  // Customize/Edit Project Popup Setup
+  const handleProjectCustomize = (project) => {
+    setEditingProjectId(project._id);
+    setProjectName(project.name);
+    setProjectColor(project.color || "");
+    setProjectDescription(project.description || "");
+    setProjectSharedContext(project.sharedContext || "");
+    setProjectPopup(true);
+    toggleProjectMenu(null);
   };
 
-  // Folder Creation / Update
-  const handleFolderCreate = async () => {
-    if (!folderName.trim()) return;
-    const folderData = {
-      name:
-        folderName.charAt(0).toUpperCase() + folderName.slice(1).toLowerCase(),
-      color: folderColor,
-      isPinned: false,
+  // Project Creation / Update
+  const handleProjectCreate = async () => {
+    if (!projectName.trim()) return;
+    const projectData = {
+      name: projectName.trim(),
+      color: projectColor,
+      description: projectDescription.trim(),
+      sharedContext: projectSharedContext.trim(),
     };
 
     try {
-      if (editingFolderId) {
-        await api.post(
-          "/user/updateFolder",
-          { ...folderData, folderId: editingFolderId },
-          { withCredentials: true },
-        );
+      if (editingProjectId) {
+        await projectService.updateProject(editingProjectId, projectData);
       } else {
-        await api.post("/user/createFolder", folderData, {
-          withCredentials: true,
-        });
+        await projectService.createProject(projectData);
       }
     } catch (error) {
       console.error(
-        editingFolderId ? "Error Updating Folder:" : "Error Creating Folder:",
-        error.response?.data || error.message,
+        editingProjectId ? "Error Updating Project:" : "Error Creating Project:",
+        error.response?.data || error.message
       );
       return null;
     }
 
-    LoadFolders();
-    CreateFolderPopup();
+    LoadProjects();
+    CreateProjectPopup();
   };
 
-  // Toggle folder options menu
-  const toggleFolderMenu = (folderId) => {
-    setFolderMenuId((prev) => (prev === folderId ? null : folderId));
+  // Toggle project options menu
+  const toggleProjectMenu = (projectId) => {
+    setProjectMenuId((prev) => (prev === projectId ? null : projectId));
     setChatMenuId(null);
   };
 
-  // Folder Delete
-  const handleFolderDelete = async (folderId) => {
+  // Project Delete
+  const handleProjectDelete = async (projectId) => {
     try {
-      const folder = folders.find((f) => f._id === folderId);
-      if (folder && folder.chats.some((c) => c._id === currentChat)) {
+      const project = projects.find((p) => p._id === projectId);
+      if (project && project.chats?.some((c) => c._id === currentChat)) {
         setCurrentChat("");
         setMessages([]);
       }
 
-      await api.post(
-        "/user/deleteFolder",
-        { folderId },
-        { withCredentials: true },
-      );
+      await projectService.deleteProject(projectId);
     } catch (error) {
-      console.error(
-        "Error Deleting Folder:",
-        error.response?.data || error.message,
-      );
+      console.error("Error Deleting Project:", error.response?.data || error.message);
       return null;
     }
-    toggleFolderMenu(null);
-    LoadFolders();
+    toggleProjectMenu(null);
+    LoadProjects();
     LoadChats();
   };
 
-  // Loading Existing Folders
-  const LoadFolders = async () => {
-    // Get User Folders
-    let fCount;
+  // Loading Existing Projects
+  const LoadProjects = async () => {
     try {
-      const res = await api.get("/user/folders");
+      const loadedProjects = await projectService.getProjects();
+      setProjects(loadedProjects);
 
-      const loadedFolders = res.data.folders;
+      const pCount = loadedProjects.length;
+      if (showProjects) {
+        let fullHeightProjects = pCount * 40 + (pCount - 1) * 4;
 
-      setFolders(res.data.folders);
-
-      fCount = loadedFolders.length;
-
-      // Show folders - make enough Space
-      if (showFolders) {
-        let fullHeightFolders = fCount * 40 + (fCount - 1) * 4;
-
-        // Add height for chats of already opened folders
-        loadedFolders.forEach((f) => {
-          if (openFolders[f._id]) {
-            fullHeightFolders += f.chats.length * 40 + f.chats.length * 4;
+        loadedProjects.forEach((p) => {
+          if (openProjects[p._id] && p.chats) {
+            fullHeightProjects += p.chats.length * 40 + p.chats.length * 4;
           }
         });
 
-        if (fCount == 0) {
-          fullHeightFolders = 40;
+        if (pCount === 0) {
+          fullHeightProjects = 40;
         }
-        setFoldersWindowHeight(`${fullHeightFolders}px`);
+        setProjectsWindowHeight(`${fullHeightProjects}px`);
       }
     } catch (error) {
-      console.error(
-        "Error fetching folders:",
-        error.response?.data || error.message,
-      );
+      console.error("Error fetching projects:", error.response?.data || error.message);
       return null;
     }
   };
 
-  // Toggling Folder list
-  const ToggleFolderList = async () => {
-    if (!showFolders) {
-      // Base height: one row per folder
-      let totalHeight = folders.length * 40 + (folders.length - 1) * 4;
-
-      // Add chats heights of all already-opened folders
-      folders.forEach((f) => {
-        if (openFolders[f._id]) {
-          totalHeight += f.chats.length * 40 + f.chats.length * 4;
+  // Toggling Project list
+  const ToggleProjectList = async () => {
+    if (!showProjects) {
+      let totalHeight = projects.length * 40 + (projects.length - 1) * 4;
+      projects.forEach((p) => {
+        if (openProjects[p._id] && p.chats) {
+          totalHeight += p.chats.length * 40 + p.chats.length * 4;
         }
       });
-
-      setFoldersWindowHeight(`${totalHeight}px`);
+      setProjectsWindowHeight(`${totalHeight}px`);
     } else {
-      setFoldersWindowHeight("0px");
+      setProjectsWindowHeight("0px");
     }
 
-    setShowFolders(!showFolders);
-    refFoldersExpandBtn.current.style.transform = showFolders
-      ? "rotate(-90deg)"
-      : "rotate(0deg)";
+    setShowProjects(!showProjects);
+    if (refProjectsExpandBtn.current) {
+      refProjectsExpandBtn.current.style.transform = showProjects
+        ? "rotate(-90deg)"
+        : "rotate(0deg)";
+    }
   };
 
-  // Open Folder
-  const OpenFolder = (folderId) => {
-    setOpenFolders((prev) => {
-      const isCurrentlyOpen = prev[folderId];
+  // Open Project
+  const OpenProject = (projectId) => {
+    setOpenProjects((prev) => {
+      const isCurrentlyOpen = prev[projectId];
+      let totalHeight = projects.length * 40 + (projects.length - 1) * 4;
 
-      let totalHeight = folders.length * 40 + (folders.length - 1) * 4;
-
-      // total height required by (currently selected folder if its not opened)  & (all opened chats of currently opened folders)
-      folders.forEach((f) => {
+      projects.forEach((p) => {
         if (
-          (f._id === folderId && !isCurrentlyOpen) ||
-          (f._id !== folderId && prev[f._id])
+          (p._id === projectId && !isCurrentlyOpen) ||
+          (p._id !== projectId && prev[p._id])
         ) {
-          totalHeight += f.chats.length * 40 + f.chats.length * 4;
+          if (p.chats) {
+            totalHeight += p.chats.length * 40 + p.chats.length * 4;
+          }
         }
       });
 
-      setFoldersWindowHeight(`${totalHeight}px`);
-
-      return { ...prev, [folderId]: !isCurrentlyOpen };
+      setProjectsWindowHeight(`${totalHeight}px`);
+      return { ...prev, [projectId]: !isCurrentlyOpen };
     });
   };
 
   // Toggle chat options menu
   const toggleChatMenu = (chatId) => {
     setChatMenuId((prev) => (prev === chatId ? null : chatId));
-    setFolderMenuId(null);
+    setProjectMenuId(null);
   };
 
-  // Move chat
-  const handleMoveChat = async (chatId, folderId) => {
+  // Move chat to project
+  const handleMoveChat = async (chatId, projectId) => {
     try {
-      await api.post(
-        "/user/moveChat",
-        { chatId, folderId },
-        { withCredentials: true },
-      );
+      await chatService.moveChat(chatId, projectId);
     } catch (error) {
-      console.error(
-        "Error Moving Chat:",
-        error.response?.data || error.message,
-      );
+      console.error("Error Moving Chat:", error.response?.data || error.message);
       return null;
     }
 
     toggleChatMenu(null);
-
     LoadChats();
-    LoadFolders();
+    LoadProjects();
   };
 
   // Delete Chat
   const handleChatDelete = async (chatId) => {
     try {
-      await api.post("/user/deleteChat", { chatId }, { withCredentials: true });
-      console.log("Chat deleted");
+      await chatService.deleteChat(chatId);
     } catch (error) {
-      console.error(
-        "Error Deleting Chat:",
-        error.response?.data || error.message,
-      );
+      console.error("Error Deleting Chat:", error.response?.data || error.message);
       return null;
     }
 
     if (currentChat === chatId) {
       setCurrentChat("");
       setMessages([]);
+      navigate("/");
     }
 
     toggleChatMenu(null);
     LoadChats();
-    LoadFolders();
+    LoadProjects();
   };
 
   // Rename Chat
   const handleChatRename = async (chatId, title) => {
     try {
-      await api.post(
-        "/user/renameChat",
-        { chatId, title },
-        { withCredentials: true },
-      );
+      await chatService.renameChat(chatId, title);
     } catch (error) {
-      console.error(
-        "Error Renaming Chat:",
-        error.response?.data || error.message,
-      );
+      console.error("Error Renaming Chat:", error.response?.data || error.message);
       return null;
     }
 
     LoadChats();
-    LoadFolders();
+    LoadProjects();
   };
 
-  // Loading Existing Chats
+  // Loading Standalone Chats
   const LoadChats = async () => {
-    // Get User Chats
-    let cCount;
     try {
       const res = await api.get("/user/chats");
+      const loadedChats = res.data.ungroupedChats || [];
+      setChats(loadedChats);
+      setChatsCount(loadedChats.length);
 
-      setChats(res.data.ungroupedChats);
-      //console.log("Chats: ", res.data.ungroupedChats);
-
-      cCount = res.data.ungroupedChats.length;
-      setChatsCount(res.data.ungroupedChats.length);
+      if (showChats) {
+        const fullHeightChats = `${loadedChats.length * 40 + (loadedChats.length - 1) * 4}px`;
+        setChatWindowHeight(fullHeightChats);
+      }
     } catch (error) {
-      console.error(
-        "Error fetching chats:",
-        error.response?.data || error.message,
-      );
+      console.error("Error fetching chats:", error.response?.data || error.message);
       return null;
     }
-
-    // Show chats - make enough Space
-    if (showChats) {
-      const fullHeightChats = `${cCount * 40 + (cCount - 1) * 4}px`;
-
-      setChatWindowHeight(fullHeightChats);
-    }
-    return null;
   };
 
   // Toggling Chat list
@@ -433,17 +394,15 @@ const Home = () => {
       const fullHeightChats = `${chatsCount * 40 + (chatsCount - 1) * 4}px`;
       setChatWindowHeight(fullHeightChats);
     } else {
-      const fullHeightChats = `${0}px`;
-      setChatWindowHeight(fullHeightChats);
-      requestAnimationFrame(() => {
-        setChatWindowHeight("0px");
-      });
+      setChatWindowHeight("0px");
     }
 
     setShowChats(!showChats);
-    refChatsExpandBtn.current.style.transform = showChats
-      ? "rotate(-90deg)"
-      : "rotate(0deg)";
+    if (refChatsExpandBtn.current) {
+      refChatsExpandBtn.current.style.transform = showChats
+        ? "rotate(-90deg)"
+        : "rotate(0deg)";
+    }
   };
 
   // Open Chat
@@ -451,71 +410,34 @@ const Home = () => {
     if (window.innerWidth < 768) {
       setToggleSidebar(false);
     }
-    //console.log(chatId);
-
-    setCurrentChat(chatId);
-
-    try {
-      const pastMessages = await api.post(
-        "/user/getChat",
-        { chatId },
-        { withCredentials: true },
-      );
-      setMessages(pastMessages.data.messages);
-
-      console.log(pastMessages.data.messages);
-    } catch (error) {
-      console.error(
-        "Error getting Chat messages:",
-        error.response?.data || error.message,
-      );
-    }
+    navigate(`/c/${chatId}`);
   };
 
-  //Load saved prompts
+  // Load saved prompts
   const LoadSavedPrompts = async () => {
     try {
       const res = await api.get("/user/getPrompts");
-
       setSavedPrompts(res.data.savedPrompts);
     } catch (error) {
-      console.error(
-        "Error fetching saved prompts:",
-        error.response?.data || error.message,
-      );
+      console.error("Error fetching saved prompts:", error.response?.data || error.message);
     }
   };
 
   const TogglePinPrompt = async (promptId) => {
     try {
-      await api.post(
-        "/user/togglePinPrompt",
-        { promptId },
-        { withCredentials: true },
-      );
+      await api.post("/user/togglePinPrompt", { promptId }, { withCredentials: true });
       LoadSavedPrompts();
     } catch (error) {
-      console.error(
-        "Error Toggling pin-Unpin Saved Prompt:",
-        error.response?.data || error.message,
-      );
+      console.error("Error Toggling pin-Unpin Saved Prompt:", error.response?.data || error.message);
     }
   };
 
   const DeletePrompt = async (promptId) => {
     try {
-      await api.post(
-        "/user/deletePrompt",
-        { promptId },
-        { withCredentials: true },
-      );
+      await api.post("/user/deletePrompt", { promptId }, { withCredentials: true });
     } catch (error) {
-      console.error(
-        "Error Deleting Saved Prompt:",
-        error.response?.data || error.message,
-      );
+      console.error("Error Deleting Saved Prompt:", error.response?.data || error.message);
     }
-
     LoadSavedPrompts();
   };
 
@@ -526,6 +448,7 @@ const Home = () => {
     }
     setCurrentChat("");
     setMessages([]);
+    navigate("/");
   };
 
   // Send prompt req
@@ -551,20 +474,17 @@ const Home = () => {
       parts.push({ type: "audio", url: selectedAudio });
     }
 
-    // Build user message display text containing attachment indicators
     let displayText = prompt;
     const indicators = [];
     if (selectedImage) indicators.push("🖼️ [Image Attached]");
     if (selectedAudio) indicators.push("🎵 [Audio Attached]");
     if (indicators.length > 0) {
-      displayText =
-        (displayText ? displayText + "\n\n" : "") + indicators.join("\n");
+      displayText = (displayText ? displayText + "\n\n" : "") + indicators.join("\n");
     }
     if (!displayText) {
       displayText = "Multi-Modal Input";
     }
 
-    // Clear input states immediately
     setPromptText("");
     setSelectedImage(null);
     setSelectedAudio(null);
@@ -585,98 +505,80 @@ const Home = () => {
     ]);
 
     if (user) {
-      // New chat prompt
-      if (!currentChat) {
-        try {
-          const promptRes = await api.post(
-            "/user/chat",
-            { prompt, parts, model: selectedModel },
-            { withCredentials: true },
-          );
-          const resData = promptRes.data.llmResponse;
-          console.log("RES: ", resData);
-          // response
-          setMessages((prev) =>
-            prev.map((msg) =>
-              msg._id === botId ? { ...msg, blocks: resData.blocks } : msg,
-            ),
-          );
+      try {
+        let createdChatId = currentChat;
 
-          setCurrentChat(promptRes.data.currentChat);
-        } catch (error) {
-          console.error(
-            "Error Sending Prompt:",
-            error.response?.data || error.message,
-          );
-          setMessages((prev) =>
-            prev.map((msg) =>
-              msg._id === botId
-                ? {
-                    ...msg,
-                    blocks: [{ type: "chat", content: `Error: ${error.response?.data?.error || error.message}` }],
-                  }
-                : msg,
-            ),
-          );
-        }
-
-        LoadChats();
-      } else {
-        // Prompt on continued chat
-        try {
-          const promptRes = await api.post(
-            "/user/chat",
-            { prompt, parts, model: selectedModel, currentChat },
-            { withCredentials: true },
-          );
-          const resData = promptRes.data.llmResponse;
-
-          // response
-          setMessages((prev) =>
-            prev.map((msg) =>
-              msg._id === botId ? { ...msg, blocks: resData.blocks } : msg,
-            ),
-          );
-        } catch (error) {
-          console.error(
-            "Error Sending Prompt:",
-            error.response?.data || error.message,
-          );
-          setMessages((prev) =>
-            prev.map((msg) =>
-              msg._id === botId
-                ? {
-                    ...msg,
-                    blocks: [{ type: "chat", content: `Error: ${error.response?.data?.error || error.message}` }],
-                  }
-                : msg,
-            ),
-          );
-        }
+        await chatService.streamChat({
+          prompt,
+          parts,
+          model: selectedModel,
+          currentChat,
+          projectId: urlProjectId,
+          onMeta: (meta) => {
+            if (meta.currentChat && !currentChat) {
+              createdChatId = meta.currentChat;
+              setCurrentChat(meta.currentChat);
+              navigate(`/c/${meta.currentChat}`);
+            }
+          },
+          onToken: (token, accumulated, cleanContent) => {
+            const displayContent = cleanContent || accumulated;
+            setMessages((prev) =>
+              prev.map((msg) =>
+                msg._id === botId
+                  ? { ...msg, blocks: [{ type: "chat", content: displayContent }] }
+                  : msg
+              )
+            );
+          },
+          onComplete: (fullText) => {
+            try {
+              const parsed = JSON.parse(fullText);
+              if (parsed && Array.isArray(parsed.blocks)) {
+                setMessages((prev) =>
+                  prev.map((msg) =>
+                    msg._id === botId ? { ...msg, blocks: parsed.blocks } : msg
+                  )
+                );
+              }
+            } catch (e) {
+              // Plain markdown response remains in place
+            }
+          }
+        });
+      } catch (error) {
+        console.error("Error Streaming Prompt:", error.message);
+        setMessages((prev) =>
+          prev.map((msg) =>
+            msg._id === botId
+              ? {
+                  ...msg,
+                  blocks: [{ type: "chat", content: `Error: ${error.message}` }],
+                }
+              : msg
+          )
+        );
       }
+      LoadChats();
     } else {
-      // New chat prompt for guest
+      // Guest chat prompt
       if (!currentChat) {
         try {
           const promptRes = await axios.post(
             `${config.BACKEND_URL}/api/temp/chat`,
-            { prompt, parts, model: selectedModel },
+            { prompt, parts, model: selectedModel }
           );
           const resData = promptRes.data.llmResponse;
 
-          // response
           setMessages((prev) =>
             prev.map((msg) =>
-              msg._id === botId ? { ...msg, blocks: resData.blocks } : msg,
-            ),
+              msg._id === botId ? { ...msg, blocks: resData.blocks } : msg
+            )
           );
 
           setCurrentChat(promptRes.data.currentChat);
         } catch (error) {
-          console.error(
-            "Error Sending Prompt:",
-            error.response?.data || error.message,
-          );
+          console.error("Error Sending Prompt:", error.response?.data || error.message);
           setMessages((prev) =>
             prev.map((msg) =>
               msg._id === botId
@@ -684,30 +586,25 @@ const Home = () => {
                     ...msg,
                     blocks: [{ type: "chat", content: `Error: ${error.response?.data?.error || error.message}` }],
                   }
-                : msg,
-            ),
+                : msg
+            )
           );
         }
       } else {
-        // Prompt on continued chat for guest
         try {
           const promptRes = await axios.post(
             `${config.BACKEND_URL}/api/temp/chat`,
-            { prompt, parts, model: selectedModel, currentChat },
+            { prompt, parts, model: selectedModel, currentChat }
           );
           const resData = promptRes.data.llmResponse;
 
-          // response
           setMessages((prev) =>
             prev.map((msg) =>
-              msg._id === botId ? { ...msg, blocks: resData.blocks } : msg,
-            ),
+              msg._id === botId ? { ...msg, blocks: resData.blocks } : msg
+            )
           );
         } catch (error) {
-          console.error(
-            "Error Sending Prompt:",
-            error.response?.data || error.message,
-          );
+          console.error("Error Sending Prompt:", error.response?.data || error.message);
           setMessages((prev) =>
             prev.map((msg) =>
               msg._id === botId
@@ -715,8 +612,8 @@ const Home = () => {
                     ...msg,
                     blocks: [{ type: "chat", content: `Error: ${error.response?.data?.error || error.message}` }],
                   }
-                : msg,
-            ),
+                : msg
+            )
           );
         }
       }
@@ -725,45 +622,34 @@ const Home = () => {
     setLoading(false);
   };
 
-  // On Hit enter
   const onHitEnter = (e) => {
     if (e.key === "Enter") {
       handlePrompt();
     }
   };
 
-  // Response Area height calculation
   useLayoutEffect(() => {
     if (latestBotRef.current && latestUserRef.current && containerRef.current) {
       const rect = containerRef.current.getBoundingClientRect();
-      const viewportHeight =
-        window.innerHeight || document.documentElement.clientHeight;
+      const viewportHeight = window.innerHeight || document.documentElement.clientHeight;
 
-      const titlebarHeight =
-        titleBarRef.current?.getBoundingClientRect().height || 0;
-      const searchbarHeight =
-        searchBarRef.current?.getBoundingClientRect().height || 0;
+      const titlebarHeight = titleBarRef.current?.getBoundingClientRect().height || 0;
+      const searchbarHeight = searchBarRef.current?.getBoundingClientRect().height || 0;
 
       const usableTop = titlebarHeight;
       const usableBottom = viewportHeight - searchbarHeight;
 
-      const visibleHeight =
-        Math.min(rect.bottom, usableBottom) - Math.max(rect.top, usableTop);
+      const visibleHeight = Math.min(rect.bottom, usableBottom) - Math.max(rect.top, usableTop);
       const clampedVisibleHeight = visibleHeight > 0 ? visibleHeight : 0;
 
-      const latestUserHeight =
-        latestUserRef.current.getBoundingClientRect().height;
-
-      const latestBotHeight =
-        latestBotRef.current ? latestBotRef.current.getBoundingClientRect().height : 0;
+      const latestUserHeight = latestUserRef.current.getBoundingClientRect().height;
+      const latestBotHeight = latestBotRef.current ? latestBotRef.current.getBoundingClientRect().height : 0;
 
       const height = clampedVisibleHeight - latestUserHeight - latestBotHeight - 40;
-
       setResponseHeight(height > 0 ? height : 0);
     }
   }, [messages]);
 
-  // Scroll to user prompt after messages increase
   useEffect(() => {
     if (latestUserRef.current) {
       latestUserRef.current.scrollIntoView({
@@ -778,7 +664,6 @@ const Home = () => {
     }
   }, [messages.length]);
 
-  // Logout
   const handleLogOut = async () => {
     if (user) {
       try {
@@ -788,16 +673,13 @@ const Home = () => {
           {
             headers: { Authorization: `Bearer ${accessToken}` },
             withCredentials: true,
-          },
+          }
         );
       } catch (err) {
         console.error("Error during API logout:", err);
       }
-
       clearAuth();
     }
-
-    // Force a full page refresh on redirect to clear all react states/memory
     window.location.href = "/";
   };
 
@@ -807,7 +689,6 @@ const Home = () => {
   return (
     <>
       <div className="flex min-h-screen bg-background text-primary">
-        {/* Mobile Sidebar backdrop */}
         {toggleSidebar && (
           <div
             className="fixed inset-0 bg-black/60 backdrop-blur-xs z-35 md:hidden"
@@ -816,42 +697,36 @@ const Home = () => {
         )}
 
         <Sidebar
-          // User
           user={user}
           username={username}
           accessToken={accessToken}
-          // Sidebar UI
           toggleSidebar={toggleSidebar}
           sidebarHover={sidebarHover}
           refSidebar={refSidebar}
           refLogo={refLogo}
-          refFoldersExpandBtn={refFoldersExpandBtn}
+          refProjectsExpandBtn={refProjectsExpandBtn}
           refChatsExpandBtn={refChatsExpandBtn}
-          // Folder Data
-          folders={folders}
-          showFolders={showFolders}
-          foldersWindowHeight={foldersWindowHeight}
-          openFolders={openFolders}
-          folderMenuId={folderMenuId}
-          // Chat Data
+          projects={projects}
+          showProjects={showProjects}
+          projectsWindowHeight={projectsWindowHeight}
+          openProjects={openProjects}
+          projectMenuId={projectMenuId}
           chats={chats}
           chatsWindowHeight={chatsWindowHeight}
           showChats={showChats}
           chatMenuId={chatMenuId}
-          // Profile
           showProfileMenu={showProfileMenu}
-          // Actions
           LeftSideToggle={LeftSideToggle}
           RightSideToggle={RightSideToggle}
           handleMouseEnter={handleMouseEnter}
           handleMouseLeave={handleMouseLeave}
           handleNewChat={handleNewChat}
-          ToggleFolderList={ToggleFolderList}
-          OpenFolder={OpenFolder}
-          toggleFolderMenu={toggleFolderMenu}
-          handleFolderDelete={handleFolderDelete}
-          CreateFolderPopup={CreateFolderPopup}
-          handleFolderCustomize={handleFolderCustomize}
+          ToggleProjectList={ToggleProjectList}
+          OpenProject={OpenProject}
+          toggleProjectMenu={toggleProjectMenu}
+          handleProjectDelete={handleProjectDelete}
+          CreateProjectPopup={CreateProjectPopup}
+          handleProjectCustomize={handleProjectCustomize}
           ToggleChatList={ToggleChatList}
           OpenChat={OpenChat}
           toggleChatMenu={toggleChatMenu}
@@ -907,18 +782,21 @@ const Home = () => {
           />
         </div>
 
-        <FolderPopup
-          folderPopup={folderPopup}
-          folderName={folderName}
-          folderColor={folderColor}
-          setFolderName={setFolderName}
-          setFolderColor={setFolderColor}
-          CreateFolderPopup={CreateFolderPopup}
-          handleFolderCreate={handleFolderCreate}
-          editingFolderId={editingFolderId}
+        <ProjectPopup
+          projectPopup={projectPopup}
+          projectName={projectName}
+          projectColor={projectColor}
+          projectDescription={projectDescription}
+          projectSharedContext={projectSharedContext}
+          setProjectName={setProjectName}
+          setProjectColor={setProjectColor}
+          setProjectDescription={setProjectDescription}
+          setProjectSharedContext={setProjectSharedContext}
+          CreateProjectPopup={CreateProjectPopup}
+          handleProjectCreate={handleProjectCreate}
+          editingProjectId={editingProjectId}
         />
 
-        {/* Global Settings Panel Modal */}
         <SettingsPanel isOpen={showSettings} onClose={() => setShowSettings(false)} />
 
         <ImageViewer
@@ -932,4 +810,3 @@ const Home = () => {
 };
 
 export default Home;
-

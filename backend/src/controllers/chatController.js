@@ -3,10 +3,21 @@ const axios = require("axios")
 
 const User = require("../models/User");
 const Chat = require("../models/Chat");
+const Project = require("../models/Project");
 const Message = require("../models/Messasge");
 
 const InputRouter = require("../services/InputRouter");
 const ReasoningService = require("../services/ReasoningService");
+const ProjectService = require("../services/project/projectService");
+const ContextRanker = require("../services/memory/contextRanker");
+
+const ConversationCache = require("../services/redis/conversationCache");
+const RateLimiter = require("../services/redis/rateLimiter");
+const PromptCache = require("../services/redis/promptCache");
+const VectorSearchCache = require("../services/redis/vectorSearchCache");
+const StreamingState = require("../services/redis/streamingState");
+const EmbeddingQueue = require("../services/redis/embeddingQueue");
+const { extractBlocks } = require("../utils/blockExtractor");
 
 const { getRedis } = require("../db");
 
@@ -99,84 +110,128 @@ const generateEmbedding = async (text) => {
   }
 };
 
-// Main function
+// Main chat handler
 const chat = async (req, res) => {
   try {
     const user = await User.findById(req.user.userId);
     if (!user) return res.status(404).json({ error: "User not found" });
 
-    let { currentChat, prompt, parts, model } = req.body;
+    // Rate Limiting via Redis
+    const rateCheck = await RateLimiter.checkRateLimit(user._id.toString());
+    if (!rateCheck.allowed) {
+      return res.status(429).json({
+        error: "Rate limit exceeded. Please wait a moment before sending another message.",
+        resetMs: rateCheck.resetMs
+      });
+    }
 
-    // Default to llama-3.3-70b-versatile if model is not provided
+    let { currentChat, projectId, prompt, parts, model } = req.body;
+
+    // Default model if not provided
     if (!model) {
       model = "llama-3.3-70b-versatile";
     }
 
-    // Validate that reasoning model is allowed
+    // Validate model
     if (!ReasoningService.allowedModels.includes(model)) {
       return res.status(400).json({ error: `Invalid reasoning model selected: ${model}` });
     }
 
-    // Support both new 'parts' structure and legacy single 'prompt' string
+    // Support both 'parts' array and single 'prompt' string
     if (!parts || !Array.isArray(parts)) {
       parts = [{ type: "text", value: prompt || "" }];
     }
 
-    // Extract basic text prompt for title & embedding purposes
     const textPart = parts.find(p => p.type === "text");
     const textPrompt = textPart ? textPart.value : (prompt || "Multi-Modal Message");
 
+    // Check Prompt Cache (for pure text prompts)
+    const isPureText = parts.length === 1 && parts[0].type === "text";
+    if (isPureText && currentChat) {
+      const cachedResponse = await PromptCache.getCachedPrompt(textPrompt, model);
+      if (cachedResponse) {
+        return res.json({ message: "Response generated (cached)", currentChat, llmResponse: cachedResponse });
+      }
+    }
+
+    let chatDoc;
+    if (currentChat) {
+      chatDoc = await Chat.findOne({ _id: currentChat, userId: user._id });
+    }
+
     // Create chat if not exists
-    if (!currentChat) {
-      const chatDoc = new Chat({
+    if (!chatDoc) {
+      let targetProjectId = projectId;
+      if (!targetProjectId) {
+        const defaultProject = await ProjectService.getOrCreateDefaultProject(user._id);
+        targetProjectId = defaultProject._id;
+      }
+
+      chatDoc = new Chat({
         userId: user._id,
+        projectId: targetProjectId,
         title: textPrompt.substring(0, 50) || "New Chat",
         lastMessageAt: new Date()
       });
       await chatDoc.save();
       currentChat = chatDoc._id;
+    } else {
+      chatDoc.lastMessageAt = new Date();
+      await chatDoc.save();
     }
 
-    // Route input modalities and generate final reasoning prompt
+    // Route input modalities and generate prompt
     const finalPrompt = await InputRouter.route(parts);
 
-    // Generate embedding for user text (long term vector retrieval)
     const embeddingText = parts.map(p => p.value || p.url || "").join(" ");
-    const embedding = await generateEmbedding(embeddingText);
 
-    // Save user message with parts
+    // Save user message with parts and projectId (instant response)
     const userMessage = new Message({
       chatId: currentChat,
+      projectId: chatDoc.projectId,
       role: "user",
-      parts: parts,
-      embedding
+      parts: parts
     });
     await userMessage.save();
 
-    // Add to Redis short-term context
-    await addToRedisContext(currentChat, userMessage);
+    // Enqueue embedding task asynchronously in Redis background queue
+    EmbeddingQueue.enqueue(userMessage._id, embeddingText);
 
-    // Retrieve Redis context
-    const contextMessages = await getRedisContext(currentChat);
+    // Add to Redis sliding-window short-term context
+    await ConversationCache.addMessage(currentChat, userMessage);
 
-    // Retrieve semantic matches from MongoDB Atlas Vector Search (long-term memory)
+    // Retrieve Redis short-term context
+    const contextMessages = await ConversationCache.getMessages(currentChat);
+
+    // Fetch active project for shared context instructions
+    const activeProject = await Project.findById(chatDoc.projectId);
+    const sharedContext = activeProject ? activeProject.sharedContext : "";
+
+    // Retrieve semantic project matches
     let semanticMatches = [];
-    if (embedding) {
-      try {
-        semanticMatches = await Message.aggregate([
-          {
-            $vectorSearch: {
-              index: "message_embedding_index",
-              queryVector: embedding,
-              path: "embedding",
-              numCandidates: 100,
-              limit: 5,
-              filter: { chatId: currentChat }
-            }
-          }
-        ]);
-      } catch (vectorErr) {
-        console.error("Vector search aggregation failed:", vectorErr.message);
+    if (chatDoc.projectId) {
+      if (embeddingText.trim()) {
+        semanticMatches = await VectorSearchCache.getCachedVectorResults(embeddingText, chatDoc.projectId);
+      }
+
+      if (!semanticMatches || semanticMatches.length === 0) {
+        let rawMatches = [];
+        try {
+          rawMatches = await Message.find({
+            projectId: chatDoc.projectId,
+            chatId: { $ne: currentChat }
+          })
+            .sort({ createdAt: -1 })
+            .limit(10)
+            .lean();
+        } catch (e) {}
+
+        semanticMatches = ContextRanker.rankMatches(rawMatches, currentChat, 5);
+
+        // Cache vector search results in Redis
+        if (embeddingText.trim() && semanticMatches.length > 0) {
+          await VectorSearchCache.setCachedVectorResults(embeddingText, chatDoc.projectId, semanticMatches);
+        }
       }
     }
 
@@ -185,7 +240,8 @@ const chat = async (req, res) => {
       model,
       finalPrompt,
       contextMessages,
-      semanticMatches
+      semanticMatches,
+      sharedContext
     );
 
     let llmResponse = rawResponse;
@@ -212,23 +268,29 @@ const chat = async (req, res) => {
       };
     }
 
-    // Save bot response (with embedding)
-    const botEmbeddingText = llmResponse.blocks
-      .map(block => block.content || (block.questions ? JSON.stringify(block.questions) : ""))
-      .join(" ");
-    const botEmbedding = await generateEmbedding(botEmbeddingText);
+    // Cache pure text prompt response
+    if (isPureText) {
+      await PromptCache.setCachedPrompt(textPrompt, model, llmResponse);
+    }
 
+    // Save bot response (instant response)
     const botMessage = new Message({
       chatId: currentChat,
+      projectId: chatDoc.projectId,
       role: "model",
       sender: "bot",
-      blocks: llmResponse.blocks,
-      embedding: botEmbedding
+      blocks: llmResponse.blocks
     });
     await botMessage.save();
 
+    // Enqueue bot message embedding task asynchronously
+    const botEmbeddingText = llmResponse.blocks
+      .map(block => block.content || (block.questions ? JSON.stringify(block.questions) : ""))
+      .join(" ");
+    EmbeddingQueue.enqueue(botMessage._id, botEmbeddingText);
+
     // Update Redis context with bot response
-    await addToRedisContext(currentChat, botMessage);
+    await ConversationCache.addMessage(currentChat, botMessage);
 
     return res.json({ message: "Response generated", currentChat, llmResponse });
   } catch (err) {
@@ -259,4 +321,215 @@ const feedback = async (req, res) => {
   }
 };
 
-module.exports = { chat, feedback }; 
+// SSE Real-Time Streaming Chat
+const streamChat = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.userId);
+    if (!user) return res.status(404).json({ error: "User not found" });
+
+    const rateCheck = await RateLimiter.checkRateLimit(user._id.toString());
+    if (!rateCheck.allowed) {
+      return res.status(429).json({
+        error: "Rate limit exceeded. Please wait a moment before sending another message.",
+        resetMs: rateCheck.resetMs
+      });
+    }
+
+    let { currentChat, projectId, prompt, parts, model } = req.body;
+    if (!model) model = "llama-3.3-70b-versatile";
+    if (!ReasoningService.allowedModels.includes(model)) {
+      return res.status(400).json({ error: `Invalid reasoning model selected: ${model}` });
+    }
+
+    if (!parts || !Array.isArray(parts)) {
+      parts = [{ type: "text", value: prompt || "" }];
+    }
+
+    const textPart = parts.find(p => p.type === "text");
+    const textPrompt = textPart ? textPart.value : (prompt || "Multi-Modal Message");
+
+    let chatDoc;
+    if (currentChat) {
+      chatDoc = await Chat.findOne({ _id: currentChat, userId: user._id });
+    }
+
+    if (!chatDoc) {
+      let targetProjectId = projectId;
+      if (!targetProjectId) {
+        const defaultProject = await ProjectService.getOrCreateDefaultProject(user._id);
+        targetProjectId = defaultProject._id;
+      }
+
+      chatDoc = new Chat({
+        userId: user._id,
+        projectId: targetProjectId,
+        title: textPrompt.substring(0, 50) || "New Chat",
+        lastMessageAt: new Date()
+      });
+      await chatDoc.save();
+      currentChat = chatDoc._id;
+    } else {
+      chatDoc.lastMessageAt = new Date();
+      await chatDoc.save();
+    }
+
+    // Set Redis streaming state
+    await StreamingState.setGenerating(currentChat, "generating");
+
+    // Configure SSE headers
+    res.setHeader("Content-Type", "text/event-stream");
+    res.setHeader("Cache-Control", "no-cache");
+    res.setHeader("Connection", "keep-alive");
+
+    // Send metadata frame
+    res.write(`data: ${JSON.stringify({ meta: { currentChat, title: chatDoc.title } })}\n\n`);
+
+    const finalPrompt = await InputRouter.route(parts);
+    const embeddingText = parts.map(p => p.value || p.url || "").join(" ");
+
+    const userMessage = new Message({
+      chatId: currentChat,
+      projectId: chatDoc.projectId,
+      role: "user",
+      parts: parts
+    });
+    await userMessage.save();
+    
+    // Enqueue user message embedding task asynchronously in Redis background queue
+    EmbeddingQueue.enqueue(userMessage._id, embeddingText);
+
+    await ConversationCache.addMessage(currentChat, userMessage);
+
+    const contextMessages = await ConversationCache.getMessages(currentChat);
+    const activeProject = await Project.findById(chatDoc.projectId);
+    const sharedContext = activeProject ? activeProject.sharedContext : "";
+
+    let semanticMatches = [];
+    if (chatDoc.projectId) {
+      let rawMatches = [];
+      try {
+        rawMatches = await Message.find({
+          projectId: chatDoc.projectId,
+          chatId: { $ne: currentChat }
+        })
+          .sort({ createdAt: -1 })
+          .limit(10)
+          .lean();
+      } catch (e) {}
+
+      semanticMatches = ContextRanker.rankMatches(rawMatches, currentChat, 5);
+    }
+
+    const messagesPayload = [];
+    let systemPrompt = "You are a helpful assistant.";
+    if (sharedContext && sharedContext.trim()) {
+      systemPrompt += `\n\nProject Workspace Context Instructions:\n${sharedContext.trim()}`;
+    }
+    if (semanticMatches && semanticMatches.length > 0) {
+      const snippets = semanticMatches.map(m => m.text || (m.parts && m.parts.map(p => p.value).join(" "))).filter(Boolean);
+      if (snippets.length > 0) {
+        systemPrompt += "\n\nHere is relevant workspace context:\n" + snippets.map(s => `- ${s}`).join("\n");
+      }
+    }
+    messagesPayload.push({ role: "system", content: systemPrompt });
+
+    for (const msg of contextMessages) {
+      const content = msg.text || (msg.parts && msg.parts.map(p => p.value).join("\n")) || "";
+      messagesPayload.push({
+        role: msg.role === "model" || msg.sender === "bot" ? "assistant" : "user",
+        content
+      });
+    }
+    messagesPayload.push({ role: "user", content: finalPrompt });
+
+    // Request SSE stream from FastAPI
+    const streamRes = await axios.post(
+      `${LLM_API_URL}/chat/stream`,
+      { model, messages: messagesPayload },
+      { responseType: "stream" }
+    );
+
+    let accumulatedText = "";
+    let sseBuffer = "";
+
+    streamRes.data.on("data", (chunk) => {
+      const chunkStr = chunk.toString();
+      res.write(chunkStr);
+
+      sseBuffer += chunkStr;
+      const lines = sseBuffer.split("\n");
+      // Keep last incomplete line in buffer
+      sseBuffer = lines.pop();
+
+      for (const line of lines) {
+        const trimmedLine = line.trim();
+        if (trimmedLine.startsWith("data: ") && !trimmedLine.includes("[DONE]")) {
+          try {
+            const parsed = JSON.parse(trimmedLine.substring(6));
+            if (parsed.token) accumulatedText += parsed.token;
+          } catch (e) {}
+        }
+      }
+    });
+
+    streamRes.data.on("end", async () => {
+      try {
+        if (sseBuffer.trim().startsWith("data: ") && !sseBuffer.includes("[DONE]")) {
+          try {
+            const parsed = JSON.parse(sseBuffer.trim().substring(6));
+            if (parsed.token) accumulatedText += parsed.token;
+          } catch (e) {}
+        }
+
+        let blocks = extractBlocks(accumulatedText);
+        blocks = blocks.map(block => {
+          if (block.type === "chat" && typeof block.content === "string") {
+            block.content = formatResponse(block.content);
+          }
+          return block;
+        });
+
+        const botMessage = new Message({
+          chatId: currentChat,
+          projectId: chatDoc.projectId,
+          role: "model",
+          sender: "bot",
+          blocks: blocks
+        });
+        await botMessage.save();
+
+        // Enqueue bot message embedding task asynchronously
+        const botText = blocks
+          .map(b => b.content || (b.questions ? JSON.stringify(b.questions) : ""))
+          .join(" ");
+        EmbeddingQueue.enqueue(botMessage._id, botText);
+
+        await ConversationCache.addMessage(currentChat, botMessage);
+        await StreamingState.setGenerating(currentChat, "idle");
+      } catch (err) {
+        console.error("Error saving streaming message:", err);
+      } finally {
+        res.write("data: [DONE]\n\n");
+        res.end();
+      }
+    });
+
+    streamRes.data.on("error", async (err) => {
+      console.error("Stream error:", err);
+      await StreamingState.setGenerating(currentChat, "idle");
+      res.write(`data: ${JSON.stringify({ error: err.message })}\n\n`);
+      res.end();
+    });
+
+  } catch (err) {
+    console.error("streamChat error:", err);
+    if (!res.headersSent) {
+      res.status(500).json({ error: err.message || "Server error" });
+    } else {
+      res.write(`data: ${JSON.stringify({ error: err.message })}\n\n`);
+      res.end();
+    }
+  }
+};
+
+module.exports = { chat, feedback, streamChat }; 

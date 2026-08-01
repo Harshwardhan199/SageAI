@@ -37,6 +37,9 @@ const messageSchema = new mongoose.Schema({
   // NEW: embedding for vector search
   embedding: { type: [Number], default: [] },
 
+  // Associated Project for Project-level RAG context search
+  projectId: { type: mongoose.Schema.Types.ObjectId, ref: "Project" },
+
   // optional summary for old messages (context pruning)
   summary: { type: String, default: "" },
 
@@ -45,8 +48,20 @@ const messageSchema = new mongoose.Schema({
 
 }, { timestamps: true });
 
-// Pre-validate hook for backward compatibility and field sync
-messageSchema.pre("validate", function(next) {
+// Pre-validate hook for field sync and automatic projectId resolution
+messageSchema.pre("validate", async function() {
+  if (!this.projectId && this.chatId) {
+    try {
+      const Chat = mongoose.model("Chat");
+      const parentChat = await Chat.findById(this.chatId).select("projectId");
+      if (parentChat && parentChat.projectId) {
+        this.projectId = parentChat.projectId;
+      }
+    } catch (e) {
+      // Ignore if model or chat not found
+    }
+  }
+
   // Sync role and sender
   if (this.role && !this.sender) {
     this.sender = this.role === "user" ? "user" : "bot";
@@ -125,12 +140,11 @@ messageSchema.pre("validate", function(next) {
   } else if (this.text) {
     this.parts = [{ type: "text", value: this.text }];
   }
-
-  next();
 });
 
 // Efficient query for chat history
 messageSchema.index({ chatId: 1, createdAt: 1 });
+messageSchema.index({ projectId: 1, createdAt: -1 });
 
 // Optional: vector search index (for Atlas UI)
 messageSchema.index({ embedding: "vector" }); // Atlas uses this to detect vector field

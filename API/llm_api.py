@@ -1,21 +1,18 @@
 import json
-from fastapi import FastAPI
-from fastapi.responses import PlainTextResponse
-from pydantic import BaseModel
-import requests
-
-import numpy as np
-
 import os
+import requests
+import numpy as np
 from dotenv import load_dotenv
-
+from fastapi import FastAPI
+from fastapi.responses import PlainTextResponse, StreamingResponse
+from pydantic import BaseModel
 from groq import Groq
 
 load_dotenv()
 
 app = FastAPI()
 
-# Text Generation
+# Text Generation Models
 class ChatMessage(BaseModel):
     role: str
     content: str
@@ -25,9 +22,6 @@ class ChatRequest(BaseModel):
     message: str | None = None
     messages: list[ChatMessage] | None = None
 
-groqClient = Groq(api_key=os.getenv("GROQ_API_KEY"))
-
-# Embeddings
 class EmbedRequest(BaseModel):
     text: str
 
@@ -37,8 +31,9 @@ class TranscribeRequest(BaseModel):
 class VisionRequest(BaseModel):
     image_url: str
 
-API_URL = "https://api-atlas.nomic.ai/v1/embedding/text"
+groqClient = Groq(api_key=os.getenv("GROQ_API_KEY"))
 
+API_URL = "https://api-atlas.nomic.ai/v1/embedding/text"
 NOMIC_API_KEY = os.getenv("NOMIC_API_KEY")
 
 @app.api_route("/", methods=["GET", "HEAD"])
@@ -53,28 +48,17 @@ UNIFIED_SYSTEM_PROMPT = (
     "    {\n"
     "      \"type\": \"chat\",\n"
     "      \"content\": \"Markdown formatted text\"\n"
-    "    },\n"
-    "    {\n"
-    "      \"type\": \"quiz\",\n"
-    "      \"title\": \"Quiz title\",\n"
-    "      \"questions\": [\n"
-    "        {\n"
-    "          \"question\": \"Question text\",\n"
-    "          \"options\": [\"Option A\", \"Option B\", \"Option C\", \"Option D\"],\n"
-    "          \"answer\": \"Option A\"\n"
-    "        }\n"
-    "      ]\n"
     "    }\n"
     "  ]\n"
     "}\n\n"
     "Rules:\n"
-    "1. You must respond strictly with valid JSON. Do not wrap the JSON response in markdown code blocks or code fences (e.g. do not use ```json).\n"
+    "1. You must respond strictly with valid JSON. Do not wrap the JSON response in markdown code blocks or code fences.\n"
     "2. Do not include any explanations or commentary outside the JSON response.\n"
-    "3. The response must contain a top-level 'blocks' array containing one or more blocks in the order requested by the user.\n"
+    "3. The response must contain a top-level 'blocks' array.\n"
     "4. Supported block types:\n"
-    "   - 'chat': For explanations, summaries, normal text, introductions, conclusions, or general conversation. The 'content' field must contain Markdown-formatted text.\n"
-    "   - 'quiz': For multiple-choice questions. Must include a 'title' string, and a 'questions' array. Each question must contain 'question', exactly 4 'options', and 'answer' matching exactly one of the options. Generate 5-10 questions. No markdown or explanations inside the questions, options, or answers.\n"
-    "5. Combine multiple blocks if the user's prompt has multiple logical parts (e.g. explain a topic then quiz the user)."
+    "   - 'chat': Default block type for explanations, normal text, code snippets, summaries, and general conversation. The 'content' field must contain Markdown-formatted text.\n"
+    "   - 'quiz': ONLY include a 'quiz' block IF AND ONLY IF the user explicitly asks for a quiz, test, exam, or multiple-choice questions. NEVER generate a quiz automatically unless requested by the user. When requested, a 'quiz' block must include 'title' string, and a 'questions' array. Each question must contain 'question', exactly 4 'options', and 'answer' matching exactly one of the options. Generate 5-10 questions.\n"
+    "5. By default, return ONLY a 'chat' block in the 'blocks' array unless the user explicitly requests a quiz."
 )
 
 def prepare_messages(input_messages: list) -> list:
@@ -149,8 +133,39 @@ def chat(payload: ChatRequest):
             ]
         }
 
+@app.post("/chat/stream")
+def chat_stream(payload: ChatRequest):
+    try:
+        if payload.messages:
+            input_messages = payload.messages
+        else:
+            input_messages = [{"role": "user", "content": payload.message or ""}]
+
+        messages = prepare_messages(input_messages)
+
+        def event_generator():
+            try:
+                response = groqClient.chat.completions.create(
+                    model=payload.model,
+                    messages=messages,
+                    stream=True
+                )
+                for chunk in response:
+                    if chunk.choices and chunk.choices[0].delta.content:
+                        token_text = chunk.choices[0].delta.content
+                        data = json.dumps({"token": token_text})
+                        yield f"data: {data}\n\n"
+                yield "data: [DONE]\n\n"
+            except Exception as stream_err:
+                err_data = json.dumps({"error": str(stream_err)})
+                yield f"data: {err_data}\n\n"
+
+        return StreamingResponse(event_generator(), media_type="text/event-stream")
+    except Exception as e:
+        return PlainTextResponse(f"Error: {e}", status_code=500)
+
 @app.post("/feedback", response_class=PlainTextResponse)
-def chat(payload: ChatRequest):
+def feedback(payload: ChatRequest):
     try:
         response = groqClient.chat.completions.create(
             messages=[
@@ -163,21 +178,18 @@ def chat(payload: ChatRequest):
                     "content": payload.message
                 }
             ],
-            model= payload.model  
+            model=payload.model  
         )
-
-        print(response.choices[0].message.content)
 
         return response.choices[0].message.content
 
-    except requests.exceptions.RequestException as e:
+    except Exception as e:
         return f"Error: {e}"
 
 @app.post("/transcribe", response_class=PlainTextResponse)
 def transcribe(payload: TranscribeRequest):
     try:
         import base64
-        import io
         if payload.audio_url.startswith("data:"):
             header, base64_data = payload.audio_url.split(",", 1)
             audio_bytes = base64.b64decode(base64_data)
@@ -239,8 +251,11 @@ def vision(payload: VisionRequest):
         return f"Error: {e}"
 
 @app.post("/embed")
-async def get_embedding(req: EmbedRequest):
-    print("Request recieved")
+def get_embedding(req: EmbedRequest):
+    if not NOMIC_API_KEY:
+        print("Warning: NOMIC_API_KEY is missing")
+        return {"embedding": []}
+
     headers = {
         "Authorization": f"Bearer {NOMIC_API_KEY}",
         "Content-Type": "application/json"
@@ -252,13 +267,18 @@ async def get_embedding(req: EmbedRequest):
         "task_type": "search_document"
     }
 
-    response = requests.post(API_URL, json=payload, headers=headers)
+    try:
+        response = requests.post(API_URL, json=payload, headers=headers, timeout=10)
+        if response.status_code != 200:
+            print(f"Nomic API Returned Status {response.status_code}: {response.text}")
+            return {"embedding": []}
 
-    data = response.json()
-
-    print(response.status_code)
-    print(response.text)
-
-    embeddings = np.array(data["embeddings"])
-
-    return {"embedding": embeddings[0].tolist()}
+        data = response.json()
+        if isinstance(data, dict) and "embeddings" in data and len(data["embeddings"]) > 0:
+            return {"embedding": data["embeddings"][0]}
+        
+        print(f"Unexpected Nomic API response: {data}")
+        return {"embedding": []}
+    except Exception as e:
+        print(f"Embedding request failed: {e}")
+        return {"embedding": []}
