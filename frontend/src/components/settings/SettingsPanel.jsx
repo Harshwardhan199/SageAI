@@ -49,7 +49,7 @@ const SettingsPanel = ({ isOpen, onClose }) => {
             ) : (
               <div className="flex flex-col items-center justify-center text-center p-6 bg-card-bg border border-default rounded-xl">
                 <p className="text-sm text-secondary mb-3">
-                  You are currently logged in as a Guest. Sign up or Log in to sync chats and folders.
+                  You are currently logged in as a Guest. Sign up or Log in to sync chats and projects.
                 </p>
               </div>
             )}

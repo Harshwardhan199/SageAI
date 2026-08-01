@@ -2,15 +2,11 @@ import { useState, useRef, useEffect } from "react";
 
 const ChatItem = ({
   chat,
-  folders,
-  currentFolder,
-
+  projects = [],
+  currentProject,
   chatMenuId,
-
   toggleChatMenu,
-
   OpenChat,
-
   handleChatDelete,
   handleMoveChat,
   handleChatRename,
@@ -96,7 +92,7 @@ const ChatItem = ({
                 onKeyDown={handleKeyDown}
                 onBlur={handleBlur}
                 onClick={(e) => e.stopPropagation()}
-                className="w-full outline-none bg-transparent text-primary"
+                className="w-full outline-none bg-transparent text-primary text-sm font-medium"
               />
             ) : (
               <span className="truncate flex-1 text-sm font-medium">
@@ -138,7 +134,7 @@ const ChatItem = ({
 
               <div className="h-[1px] w-full bg-default/80 dark:bg-zinc-700/80" />
 
-              {/* Move */}
+              {/* Move to project */}
               <div className="relative group">
                 <div className="px-4 py-1 text-xs rounded-lg hover:bg-hover-bg flex justify-between items-center cursor-pointer gap-2 font-medium">
                   <div>Move to</div>
@@ -151,39 +147,39 @@ const ChatItem = ({
                 </div>
 
                 <div
-                  className={`absolute left-[96%] top-0 ml-1 hidden group-hover:flex flex-col gap-1 min-w-32 p-1 bg-card-bg border border-default drop-shadow rounded-lg z-20`}
+                  className="absolute left-[96%] top-0 ml-1 hidden group-hover:flex flex-col gap-1 min-w-32 p-1 bg-card-bg border border-default drop-shadow rounded-lg z-20"
                 >
                   {(() => {
-                    const filteredFolders = folders.filter((folder) =>
-                      currentFolder ? folder._id !== currentFolder._id : true,
+                    const filteredProjects = (projects || []).filter((project) =>
+                      currentProject ? project._id !== currentProject._id : true
                     );
                     return (
                       <>
-                        {filteredFolders.map((folder, idx) => (
-                          <div key={folder._id}>
+                        {filteredProjects.map((project, idx) => (
+                          <div key={project._id}>
                             <div
                               className="flex items-center gap-2 px-3 py-1.5 text-xs rounded-lg hover:bg-hover-bg font-medium cursor-pointer text-primary transition-colors duration-150"
                               onClick={() =>
-                                handleMoveChat(chat._id, folder._id)
+                                handleMoveChat(chat._id, project._id)
                               }
                             >
                               <img
                                 src="https://img.icons8.com/?size=100&id=82843&format=png&color=cccccc"
-                                alt="Folder"
+                                alt="Project"
                                 className="w-3.5 h-auto flex-shrink-0 theme-icon-light"
                               />
-                              <span className="truncate">{folder.name}</span>
+                              <span className="truncate">{project.name}</span>
                             </div>
-                            {idx < filteredFolders.length - 1 && (
+                            {idx < filteredProjects.length - 1 && (
                               <div className="h-[1px] w-full bg-default/80 dark:bg-zinc-700/80 my-0.5" />
                             )}
                           </div>
                         ))}
 
-                        {/* Only show Ungroup when inside a folder */}
-                        {currentFolder && (
+                        {/* Remove from project / move to standalone */}
+                        {currentProject && (
                           <>
-                            {filteredFolders.length > 0 && (
+                            {filteredProjects.length > 0 && (
                               <div className="h-[1px] w-full bg-default/80 dark:bg-zinc-700/80 my-0.5" />
                             )}
 
@@ -191,7 +187,7 @@ const ChatItem = ({
                               className="px-3 py-1 text-xs rounded-lg hover:bg-hover-bg font-medium cursor-pointer"
                               onClick={() => handleMoveChat(chat._id, null)}
                             >
-                              Ungroup
+                              Remove from Project
                             </div>
                           </>
                         )}

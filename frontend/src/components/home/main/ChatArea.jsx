@@ -33,21 +33,18 @@ const ChatArea = ({
   return (
     <>
       {/* Content */}
-      <div className={`flex flex-col w-full flex-1 mt-[1px] items-center px-1 sm:px-2 z-1 min-h-0 ${
-        messages.length === 0 ? "justify-center" : "justify-start overflow-hidden"
-      }`}>
+      <div className={`flex flex-col w-full flex-1 mt-[1px] items-center px-1 sm:px-2 z-1 min-h-0 ${messages.length === 0 ? "justify-center" : "justify-start overflow-hidden"
+        }`}>
         <div
-          className={`flex max-w-[780px] w-full rounded-2xl overflow-hidden ${
-            messages.length === 0 ? "bg-card-bg border border-default" : "flex-1 min-h-0 bg-transparent"
-          }`}
+          className={`flex max-w-[780px] w-full rounded-2xl overflow-hidden ${messages.length === 0 ? "bg-card-bg border border-default" : "flex-1 min-h-0 bg-transparent"
+            }`}
         >
           <div
             ref={containerRef}
-            className={`flex flex-col w-full px-2 pt-4 pb-2 ${
-              messages.length === 0
+            className={`flex flex-col w-full px-2 pt-4 pb-2 ${messages.length === 0
                 ? "items-center justify-start overflow-y-auto"
                 : "overflow-y-auto flex-1 custom-scrollbar"
-            }`}
+              }`}
           >
             {/* Welcome */}
             {messages.length === 0 && (
