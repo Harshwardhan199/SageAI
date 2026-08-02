@@ -1,6 +1,6 @@
 import { useState } from "react";
 
-const UserMessageActions = ({ user, text, onSave, onDelete }) => {
+const UserMessageActions = ({ user, text, onSave, onDelete, onEdit }) => {
   const [copied, setCopied] = useState(false);
   const [saved, setSaved] = useState(false);
 
@@ -70,6 +70,21 @@ const UserMessageActions = ({ user, text, onSave, onDelete }) => {
                 : "https://img.icons8.com/?size=100&id=bc20TOtEmtiP&format=png&color=ffffff"
             }
             alt="Save"
+            className="w-4 h-4 theme-icon-light"
+          />
+        </div>
+      )}
+
+      {/* Edit */}
+      {onEdit && (
+        <div
+          className="w-7 h-7 flex items-center justify-center rounded-lg bg-card-bg border border-default hover:bg-hover-bg cursor-pointer transition-colors shadow-sm"
+          onClick={onEdit}
+          title="Edit message"
+        >
+          <img
+            src="https://img.icons8.com/?size=100&id=jCmEz2kpksC4&format=png&color=ffffff"
+            alt="Edit"
             className="w-4 h-4 theme-icon-light"
           />
         </div>

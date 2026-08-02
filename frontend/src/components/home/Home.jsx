@@ -107,6 +107,31 @@ const Home = ({ initialShowSettings = false }) => {
 
   const [showProfileMenu, setShowProfileMenu] = useState(false);
 
+  // Edit Message state
+  const [editingMessageId, setEditingMessageId] = useState(null);
+  const [editedPrompt, setEditedPrompt] = useState("");
+
+  const handleStartEdit = (messageId, initialText) => {
+    setEditingMessageId(messageId);
+    setEditedPrompt(initialText);
+  };
+
+  const handleCancelEdit = () => {
+    setEditingMessageId(null);
+    setEditedPrompt("");
+  };
+
+  const handleEditSend = async (messageId, newPromptText) => {
+    const trimmed = newPromptText.trim();
+    if (!trimmed || loading) return;
+
+    setEditingMessageId(null);
+    setEditedPrompt("");
+
+    await handleDeleteMessage(messageId);
+    await handlePrompt(trimmed);
+  };
+
   // Sidebar Toggle
   const LeftSideToggle = () => {
     if (!leftSideToggleClicked) {
@@ -382,13 +407,25 @@ const Home = ({ initialShowSettings = false }) => {
   // Delete User Message & Truncate Subsequent History
   const handleDeleteMessage = async (messageId) => {
     try {
-      const targetIndex = messages.findIndex((m) => m._id === messageId);
+      const targetIndex = messages.findIndex(
+        (m) => m._id === messageId || m.id === messageId || m.tempId === messageId
+      );
       if (targetIndex === -1) return;
 
-      await chatService.deleteMessage(messageId);
+      const isMongoId = typeof messageId === "string" && /^[0-9a-fA-F]{24}$/.test(messageId);
+      if (isMongoId && user) {
+        await chatService.deleteMessage(messageId);
+      }
+
       setMessages((prev) => prev.slice(0, targetIndex));
     } catch (error) {
       console.error("Error Deleting Message:", error.response?.data || error.message);
+      const targetIndex = messages.findIndex(
+        (m) => m._id === messageId || m.id === messageId || m.tempId === messageId
+      );
+      if (targetIndex !== -1) {
+        setMessages((prev) => prev.slice(0, targetIndex));
+      }
     }
   };
 
@@ -519,9 +556,11 @@ const Home = ({ initialShowSettings = false }) => {
   };
 
   // Send prompt req
-  const handlePrompt = async () => {
+  const handlePrompt = async (customText) => {
+    const promptValue = typeof customText === "string" ? customText : promptText;
+
     if (
-      (promptText.trim() === "" && !selectedImage && !selectedAudio) ||
+      (promptValue.trim() === "" && !selectedImage && !selectedAudio) ||
       loading === true
     ) {
       return;
@@ -529,7 +568,7 @@ const Home = ({ initialShowSettings = false }) => {
 
     setLoading(true);
 
-    const prompt = promptText;
+    const prompt = promptValue;
     const parts = [];
     if (prompt.trim()) {
       parts.push({ type: "text", value: prompt });
@@ -552,17 +591,21 @@ const Home = ({ initialShowSettings = false }) => {
       displayText = "Multi-Modal Input";
     }
 
-    setPromptText("");
-    setSelectedImage(null);
-    setSelectedAudio(null);
-    if (inputBarRef.current) {
-      inputBarRef.current.value = "";
+    if (typeof customText !== "string") {
+      setPromptText("");
+      setSelectedImage(null);
+      setSelectedAudio(null);
+      if (inputBarRef.current) {
+        inputBarRef.current.value = "";
+      }
     }
 
-    const botId = Date.now();
+    const userMsgId = `user_${Date.now()}`;
+    const botId = Date.now() + 1;
     setMessages((prev) => [
       ...prev,
       { 
+        _id: userMsgId,
         sender: "user", 
         role: "user",
         parts: parts,
@@ -862,6 +905,12 @@ const Home = ({ initialShowSettings = false }) => {
             toggleSidebar={toggleSidebar}
             onImagePreview={setPreviewImage}
             onDeleteMessage={handleDeleteMessage}
+            editingMessageId={editingMessageId}
+            editedPrompt={editedPrompt}
+            setEditedPrompt={setEditedPrompt}
+            onStartEdit={handleStartEdit}
+            onCancelEdit={handleCancelEdit}
+            onEditSend={handleEditSend}
           />
         </div>
 

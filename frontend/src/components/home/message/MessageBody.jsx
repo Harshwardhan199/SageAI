@@ -6,6 +6,24 @@ import MarkdownBlock from "./MarkdownBlock";
 import useTheme from "../../../hooks/useTheme";
 import UserImageAttachment from "../../common/UserImageAttachment";
 
+function cleanContent(raw) {
+  if (typeof raw !== "string") return raw || "";
+  let trimmed = raw.trim();
+
+  if (trimmed.startsWith("{") && (trimmed.includes('"type"') || trimmed.includes('"blocks"') || trimmed.includes('"content"'))) {
+    try {
+      const parsed = JSON.parse(trimmed);
+      if (parsed && typeof parsed.content === "string") {
+        return cleanContent(parsed.content);
+      }
+      if (parsed && Array.isArray(parsed.blocks) && parsed.blocks[0] && typeof parsed.blocks[0].content === "string") {
+        return cleanContent(parsed.blocks[0].content);
+      }
+    } catch (e) {}
+  }
+  return raw;
+}
+
 const MessageBody = ({ message, isUser, onImagePreview }) => {
   const { blocks } = message;
   const { enableMarkdown, animateAI } = useTheme();
@@ -32,7 +50,7 @@ const MessageBody = ({ message, isUser, onImagePreview }) => {
       {blocks.map((block, index) => {
         switch (block.type) {
           case "chat": {
-            const rawBlocks = parseBlocks(block.content || "", isUser);
+            const rawBlocks = parseBlocks(cleanContent(block.content || ""), isUser);
             const chatBlocks = rawBlocks.map(b => {
               if (b.type === "quiz") {
                 return {

@@ -79,9 +79,26 @@ body {
 
 
 .custom-scrollbar {
-  overflow-x: auto; 
   scrollbar-width: thin;
-  scrollbar-color: #17181a #282c34;
+  scrollbar-color: var(--border-default) transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background-color: var(--border-default);
+  border-radius: 9999px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background-color: var(--text-secondary);
 }
 
 .markdown p {
