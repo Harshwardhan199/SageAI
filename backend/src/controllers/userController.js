@@ -115,9 +115,16 @@ const getChat = async (req, res) => {
     if (!user) return res.status(404).json({ error: "User not found" });
 
     const { chatId } = req.body;
+    if (!chatId) return res.status(400).json({ error: "Chat ID is required" });
 
-    // Retrieve messages (excluding heavy embedding arrays from network payload)
-    const messages = await Message.find({ chatId }).select("-embedding").sort({ createdAt: 1 });
+    // Enforce ownership check: Ensure chat belongs to requesting user
+    const chat = await Chat.findOne({ _id: chatId, userId: user._id });
+    if (!chat) {
+      return res.status(404).json({ error: "Chat not found or not authorized" });
+    }
+
+    // Retrieve messages belonging to this authorized chat
+    const messages = await Message.find({ chatId: chat._id }).select("-embedding").sort({ createdAt: 1 });
 
     const formattedMessages = messages.map(msg => {
       const msgObj = msg.toObject ? msg.toObject() : msg;
@@ -256,9 +263,10 @@ const togglePinPrompt = async (req, res) => {
 const deletePrompt = async (req, res) => {
   try {
     const { promptId } = req.body;
+    const userId = req.user.userId;
 
-    const prompt = await Prompt.findOneAndDelete({ _id: promptId });
-    if (!prompt) return res.status(404).json({ error: "Prompt not found" });
+    const prompt = await Prompt.findOneAndDelete({ _id: promptId, userId });
+    if (!prompt) return res.status(404).json({ error: "Prompt not found or not authorized" });
 
     res.json({ message: "Prompt deleted successfully" });
   } catch (error) {
