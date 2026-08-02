@@ -12,7 +12,7 @@ const ACCENT_COLORS = {
 export const ThemeProvider = ({ children }) => {
   // Theme State
   const [theme, setThemeState] = useState(() => {
-    return localStorage.getItem("sage_theme") || "system";
+    return localStorage.getItem("sage_theme") || "light";
   });
 
   // Accent Color State

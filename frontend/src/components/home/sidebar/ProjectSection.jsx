@@ -19,6 +19,7 @@ const ProjectSection = ({
   OpenChat,
   CreateProjectPopup,
   handleProjectCustomize,
+  handleNewChatInProject,
 }) => {
   return (
     <>
@@ -100,6 +101,7 @@ const ProjectSection = ({
             handleChatRename={handleChatRename}
             OpenChat={OpenChat}
             handleProjectCustomize={handleProjectCustomize}
+            handleNewChatInProject={handleNewChatInProject}
           />
         ))}
       </div>

@@ -77,6 +77,11 @@ export const chatService = {
     return res.data;
   },
 
+  deleteMessage: async (messageId) => {
+    const res = await api.post("/user/deleteMessage", { messageId });
+    return res.data;
+  },
+
   streamChat: async ({ prompt, parts, model, currentChat, projectId, onToken, onComplete, onMeta }) => {
     const tokenStr = authStore.getAccessToken() || "";
     const response = await fetch(`${config.BACKEND_URL}/api/user/stream`, {

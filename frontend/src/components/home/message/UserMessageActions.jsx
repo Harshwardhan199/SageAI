@@ -1,6 +1,6 @@
 import { useState } from "react";
 
-const UserMessageActions = ({ user, text, onSave }) => {
+const UserMessageActions = ({ user, text, onSave, onDelete }) => {
   const [copied, setCopied] = useState(false);
   const [saved, setSaved] = useState(false);
 
@@ -24,10 +24,26 @@ const UserMessageActions = ({ user, text, onSave }) => {
 
   return (
     <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-all duration-250">
+      {/* Delete */}
+      {onDelete && (
+        <div
+          className="w-7 h-7 flex items-center justify-center rounded-lg bg-card-bg border border-default hover:bg-hover-bg cursor-pointer transition-colors shadow-sm"
+          onClick={onDelete}
+          title="Delete message"
+        >
+          <img
+            src="https://img.icons8.com/?size=100&id=14237&format=png&color=ffffff"
+            alt="Delete"
+            className="w-4 h-4 theme-icon-light"
+          />
+        </div>
+      )}
+
       {/* Copy */}
       <div
         className="w-7 h-7 flex items-center justify-center rounded-lg bg-card-bg border border-default hover:bg-hover-bg cursor-pointer transition-colors shadow-sm"
         onClick={handleCopy}
+        title="Copy message"
       >
         <img
           src={
@@ -45,6 +61,7 @@ const UserMessageActions = ({ user, text, onSave }) => {
         <div
           className="w-7 h-7 flex items-center justify-center rounded-lg bg-card-bg border border-default hover:bg-hover-bg cursor-pointer transition-colors shadow-sm"
           onClick={handleSave}
+          title="Save prompt"
         >
           <img
             src={

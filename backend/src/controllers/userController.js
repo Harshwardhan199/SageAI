@@ -300,6 +300,41 @@ const renameChat = async (req, res) => {
   }
 };
 
+const deleteMessage = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.userId);
+    if (!user) return res.status(404).json({ error: "User not found" });
+
+    const { messageId } = req.body;
+    if (!messageId) return res.status(400).json({ error: "Message ID is required" });
+
+    const message = await Message.findById(messageId);
+    if (!message) return res.status(404).json({ error: "Message not found" });
+
+    const chat = await Chat.findOne({ _id: message.chatId, userId: user._id });
+    if (!chat) return res.status(403).json({ error: "Not authorized to delete this message" });
+
+    // Delete target message and all subsequent messages in this chat
+    await Message.deleteMany({
+      chatId: chat._id,
+      createdAt: { $gte: message.createdAt }
+    });
+
+    // Clear Redis context cache for this chat
+    try {
+      const redis = getRedis();
+      await redis.del(`chat_context:${chat._id}`);
+    } catch (err) {
+      console.warn("Redis delete error during message deletion:", err.message);
+    }
+
+    res.json({ message: "Messages truncated successfully", messageId });
+  } catch (err) {
+    console.error("deleteMessage error:", err);
+    res.status(500).json({ error: "Server error" });
+  }
+};
+
 module.exports = {
   getCurrentUser,
   getChat,
@@ -310,5 +345,6 @@ module.exports = {
   getPrompts,
   togglePinPrompt,
   deletePrompt,
-  renameChat
+  renameChat,
+  deleteMessage
 };

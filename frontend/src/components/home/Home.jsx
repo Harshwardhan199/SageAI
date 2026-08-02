@@ -15,6 +15,7 @@ import ChatArea from "./main/ChatArea";
 import Message from "./message/Message";
 import SettingsPanel from "../settings/SettingsPanel";
 import ImageViewer from "../common/ImageViewer";
+import ConfirmationModal from "../common/ConfirmationModal";
 
 const Home = ({ initialShowSettings = false }) => {
   const navigate = useNavigate();
@@ -86,6 +87,20 @@ const Home = ({ initialShowSettings = false }) => {
   const containerRef = useRef(null);
   const latestUserRef = useRef(null);
   const latestBotRef = useRef(null);
+
+  // Confirmation Modal State
+  const [confirmModal, setConfirmModal] = useState({
+    isOpen: false,
+    title: "",
+    message: "",
+    confirmText: "Confirm",
+    confirmVariant: "danger",
+    onConfirm: null,
+  });
+
+  const closeConfirmModal = () => {
+    setConfirmModal((prev) => ({ ...prev, isOpen: false }));
+  };
 
   const [responseHeight, setResponseHeight] = useState(0);
   const [previewImage, setPreviewImage] = useState(null);
@@ -232,6 +247,18 @@ const Home = ({ initialShowSettings = false }) => {
     setChatMenuId(null);
   };
 
+  const promptDeleteProject = (projectId) => {
+    toggleProjectMenu(null);
+    setConfirmModal({
+      isOpen: true,
+      title: "Delete Project",
+      message: "Are you sure you want to delete this project? All chats and shared settings associated with it will be permanently deleted.",
+      confirmText: "Delete Project",
+      confirmVariant: "danger",
+      onConfirm: () => handleProjectDelete(projectId),
+    });
+  };
+
   // Project Delete
   const handleProjectDelete = async (projectId) => {
     try {
@@ -340,6 +367,41 @@ const Home = ({ initialShowSettings = false }) => {
     toggleChatMenu(null);
     LoadChats();
     LoadProjects();
+  };
+
+  // New Chat in Project
+  const handleNewChatInProject = async (projectId) => {
+    if (window.innerWidth < 768) {
+      setToggleSidebar(false);
+    }
+    setCurrentChat("");
+    setMessages([]);
+    navigate(`/p/${projectId}`);
+  };
+
+  // Delete User Message & Truncate Subsequent History
+  const handleDeleteMessage = async (messageId) => {
+    try {
+      const targetIndex = messages.findIndex((m) => m._id === messageId);
+      if (targetIndex === -1) return;
+
+      await chatService.deleteMessage(messageId);
+      setMessages((prev) => prev.slice(0, targetIndex));
+    } catch (error) {
+      console.error("Error Deleting Message:", error.response?.data || error.message);
+    }
+  };
+
+  const promptDeleteChat = (chatId) => {
+    toggleChatMenu(null);
+    setConfirmModal({
+      isOpen: true,
+      title: "Delete Chat",
+      message: "Are you sure you want to delete this chat? All messages in this conversation will be permanently removed.",
+      confirmText: "Delete Chat",
+      confirmVariant: "danger",
+      onConfirm: () => handleChatDelete(chatId),
+    });
   };
 
   // Delete Chat
@@ -669,6 +731,18 @@ const Home = ({ initialShowSettings = false }) => {
     }
   }, [messages.length]);
 
+  const promptLogOut = () => {
+    setShowProfileMenu(false);
+    setConfirmModal({
+      isOpen: true,
+      title: "Log Out",
+      message: "Are you sure you want to log out of your account?",
+      confirmText: "Log Out",
+      confirmVariant: "danger",
+      onConfirm: () => handleLogOut(),
+    });
+  };
+
   const handleLogOut = async () => {
     if (user) {
       try {
@@ -729,17 +803,18 @@ const Home = ({ initialShowSettings = false }) => {
           ToggleProjectList={ToggleProjectList}
           OpenProject={OpenProject}
           toggleProjectMenu={toggleProjectMenu}
-          handleProjectDelete={handleProjectDelete}
+          handleProjectDelete={promptDeleteProject}
           CreateProjectPopup={CreateProjectPopup}
           handleProjectCustomize={handleProjectCustomize}
+          handleNewChatInProject={handleNewChatInProject}
           ToggleChatList={ToggleChatList}
           OpenChat={OpenChat}
           toggleChatMenu={toggleChatMenu}
-          handleChatDelete={handleChatDelete}
+          handleChatDelete={promptDeleteChat}
           handleMoveChat={handleMoveChat}
           handleChatRename={handleChatRename}
           setShowProfileMenu={setShowProfileMenu}
-          handleLogOut={handleLogOut}
+          handleLogOut={promptLogOut}
           onOpenSettings={() => setShowSettings(true)}
         />
 
@@ -750,15 +825,17 @@ const Home = ({ initialShowSettings = false }) => {
         >
           <TitleBar
             user={user}
+            username={username}
+            currentChat={currentChat}
+            chats={chats}
+            selectedModel={selectedModel}
+            setSelectedModel={setSelectedModel}
+            onToggleSidebar={() => setToggleSidebar(!toggleSidebar)}
             savedPrompts={savedPrompts}
             showSavedPrompts={showSavedPrompts}
             setShowSavedPrompts={setShowSavedPrompts}
             TogglePinPrompt={TogglePinPrompt}
             DeletePrompt={DeletePrompt}
-            handleLogOut={handleLogOut}
-            selectedModel={selectedModel}
-            setSelectedModel={setSelectedModel}
-            onToggleSidebar={() => setToggleSidebar(!toggleSidebar)}
           />
 
           <ChatArea
@@ -784,8 +861,22 @@ const Home = ({ initialShowSettings = false }) => {
             setSelectedAudio={setSelectedAudio}
             toggleSidebar={toggleSidebar}
             onImagePreview={setPreviewImage}
+            onDeleteMessage={handleDeleteMessage}
           />
         </div>
+
+        <ConfirmationModal
+          isOpen={confirmModal.isOpen}
+          title={confirmModal.title}
+          message={confirmModal.message}
+          confirmText={confirmModal.confirmText}
+          confirmVariant={confirmModal.confirmVariant}
+          onConfirm={() => {
+            if (confirmModal.onConfirm) confirmModal.onConfirm();
+            closeConfirmModal();
+          }}
+          onCancel={closeConfirmModal}
+        />
 
         <ProjectPopup
           projectPopup={projectPopup}

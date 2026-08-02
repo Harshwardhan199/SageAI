@@ -47,6 +47,7 @@ const Sidebar = ({
   handleProjectDelete,
   CreateProjectPopup,
   handleProjectCustomize,
+  handleNewChatInProject,
 
   ToggleChatList,
   OpenChat,
@@ -136,6 +137,7 @@ const Sidebar = ({
               OpenChat={OpenChat}
               CreateProjectPopup={CreateProjectPopup}
               handleProjectCustomize={handleProjectCustomize}
+              handleNewChatInProject={handleNewChatInProject}
             />
 
             <ChatSection
