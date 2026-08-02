@@ -12,7 +12,8 @@ const {
   getPrompts,
   togglePinPrompt,
   deletePrompt,
-  renameChat
+  renameChat,
+  deleteMessage
 } = require("../controllers/userController");
 const { chat, feedback, streamChat } = require("../controllers/chatController");
 
@@ -22,6 +23,7 @@ router.get("/chats", authMiddleware, getUngroupedChats);
 router.post("/moveChat", authMiddleware, moveChat);
 router.post("/deleteChat", authMiddleware, deleteChat);
 router.post("/renameChat", authMiddleware, renameChat);
+router.post("/deleteMessage", authMiddleware, deleteMessage);
 
 router.post("/getChat", authMiddleware, getChat);
 

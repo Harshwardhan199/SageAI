@@ -14,6 +14,7 @@ const ProjectItem = ({
   handleChatRename,
   OpenChat,
   handleProjectCustomize,
+  handleNewChatInProject,
 }) => {
   const chatsCount = project.chats ? project.chats.length : 0;
   const projectChatsWindowHeight = isOpen
@@ -54,46 +55,67 @@ const ProjectItem = ({
                 <div className="text-sm font-semibold">{project.name}</div>
               </div>
 
-              {/* Project Menu */}
-              <div
-                className="relative flex items-center opacity-0 group-hover:opacity-100 transition-opacity"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  toggleProjectMenu?.(project._id);
-                }}
-              >
-                <img
-                  src="https://img.icons8.com/?size=100&id=102729&format=png&color=dddddd"
-                  alt="Options"
-                  className="options-button w-[14px] h-auto flex-shrink-0 mx-2 theme-icon-light"
-                />
+              {/* Project Actions (New Chat & Options Menu) */}
+              <div className="flex items-center gap-1">
+                {/* Direct New Chat Button */}
+                <div
+                  className="opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded hover:bg-zinc-200 dark:hover:bg-zinc-800/80 cursor-pointer"
+                  title="New Chat in Project"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (handleNewChatInProject) {
+                      handleNewChatInProject(project._id);
+                    }
+                  }}
+                >
+                  <img
+                    src="https://img.icons8.com/?size=100&id=zqRKVWtC1VeY&format=png&color=ffffff"
+                    alt="New Chat in Project"
+                    className="w-[15px] h-auto flex-shrink-0 theme-icon-light"
+                  />
+                </div>
 
-                {projectMenuId === project._id && (
-                  <div
-                    className="menu-container absolute left-[90%] -top-[60%] flex flex-col gap-1 p-1 bg-card-bg border border-default drop-shadow rounded-lg z-50 text-primary"
-                    onClick={(e) => e.stopPropagation()}
-                  >
+                {/* Project Menu Toggle */}
+                <div
+                  className="relative flex items-center opacity-0 group-hover:opacity-100 transition-opacity"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    toggleProjectMenu?.(project._id);
+                  }}
+                >
+                  <img
+                    src="https://img.icons8.com/?size=100&id=102729&format=png&color=dddddd"
+                    alt="Options"
+                    className="options-button w-[14px] h-auto flex-shrink-0 mx-1.5 theme-icon-light"
+                  />
+
+                  {projectMenuId === project._id && (
                     <div
-                      className="px-3 py-1 text-xs rounded-lg hover:bg-hover-bg font-medium cursor-pointer"
-                      onClick={() =>
-                        handleProjectCustomize?.(project)
-                      }
+                      className="menu-container absolute left-[90%] -top-[60%] flex flex-col gap-1 p-1 bg-card-bg border border-default drop-shadow rounded-lg z-50 text-primary"
+                      onClick={(e) => e.stopPropagation()}
                     >
-                      Edit
-                    </div>
+                      <div
+                        className="px-3 py-1 text-xs rounded-lg hover:bg-hover-bg font-medium cursor-pointer"
+                        onClick={() =>
+                          handleProjectCustomize?.(project)
+                        }
+                      >
+                        Edit
+                      </div>
 
-                    <div className="h-[1px] w-full bg-default/80 dark:bg-zinc-700/80" />
+                      <div className="h-[1px] w-full bg-default/80 dark:bg-zinc-700/80" />
 
-                    <div
-                      className="px-3 py-1 text-xs rounded-lg hover:bg-hover-bg text-red-600 font-semibold cursor-pointer"
-                      onClick={() =>
-                        handleProjectDelete?.(project._id)
-                      }
-                    >
-                      Delete
+                      <div
+                        className="px-3 py-1 text-xs rounded-lg hover:bg-hover-bg text-red-600 font-semibold cursor-pointer"
+                        onClick={() =>
+                          handleProjectDelete?.(project._id)
+                        }
+                      >
+                        Delete
+                      </div>
                     </div>
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
             </div>
           </div>

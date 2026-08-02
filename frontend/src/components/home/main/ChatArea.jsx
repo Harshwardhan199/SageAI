@@ -29,6 +29,7 @@ const ChatArea = ({
   selectedAudio,
   setSelectedAudio,
   onImagePreview,
+  onDeleteMessage
 }) => {
   return (
     <>
@@ -69,6 +70,7 @@ const ChatArea = ({
                 message={msg}
                 loadSavedPrompts={LoadSavedPrompts}
                 onImagePreview={onImagePreview}
+                onDeleteMessage={onDeleteMessage}
                 ref={
                   idx === lastUserIndex
                     ? latestUserRef

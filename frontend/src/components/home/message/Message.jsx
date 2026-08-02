@@ -9,7 +9,7 @@ import BotMessageActions from "./BotMessageActions";
 import MessageBody from "./MessageBody";
 import UserImageAttachment from "../../common/UserImageAttachment";
 
-const Message = forwardRef(({ message, style, loadSavedPrompts, onImagePreview }, ref) => {
+const Message = forwardRef(({ message, style, loadSavedPrompts, onImagePreview, onDeleteMessage }, ref) => {
   const { user } = useAuth();
   const { theme, showTimestamps } = useTheme();
   const { sender, blocks } = message;
@@ -110,7 +110,12 @@ const Message = forwardRef(({ message, style, loadSavedPrompts, onImagePreview }
       )}
 
       {isUser ? (
-        <UserMessageActions user={user} text={cleanedText || "Image Attachment"} onSave={handleSavePrompt} />
+        <UserMessageActions
+          user={user}
+          text={cleanedText || "Image Attachment"}
+          onSave={handleSavePrompt}
+          onDelete={() => onDeleteMessage && message._id && onDeleteMessage(message._id)}
+        />
       ) : (
         <BotMessageActions message={message} />
       )}
