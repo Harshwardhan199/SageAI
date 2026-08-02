@@ -91,27 +91,37 @@ const ProjectItem = ({
 
                   {projectMenuId === project._id && (
                     <div
-                      className="menu-container absolute left-[90%] -top-[60%] flex flex-col gap-1 p-1 bg-card-bg border border-default drop-shadow rounded-lg z-50 text-primary"
+                      className="menu-container absolute left-[0%] top-[140%] flex flex-col gap-1 min-w-28 p-1 bg-card-bg border border-default drop-shadow rounded-lg z-50 text-primary"
                       onClick={(e) => e.stopPropagation()}
                     >
                       <div
-                        className="px-3 py-1 text-xs rounded-lg hover:bg-hover-bg font-medium cursor-pointer"
+                        className="flex items-center gap-2 px-2.5 py-2 text-xs rounded-lg hover:bg-hover-bg font-medium cursor-pointer"
                         onClick={() =>
                           handleProjectCustomize?.(project)
                         }
                       >
-                        Edit
+                        <img
+                          src="https://img.icons8.com/?size=100&id=jCmEz2kpksC4&format=png&color=ffffff"
+                          alt="Edit"
+                          className="w-3.5 h-3.5 theme-icon-light flex-shrink-0"
+                        />
+                        <span>Edit</span>
                       </div>
 
                       <div className="h-[1px] w-full bg-default/80 dark:bg-zinc-700/80" />
 
                       <div
-                        className="px-3 py-1 text-xs rounded-lg hover:bg-hover-bg text-red-600 font-semibold cursor-pointer"
+                        className="flex items-center gap-2 px-2.5 py-2 text-xs rounded-lg hover:bg-hover-bg text-red-600 font-semibold cursor-pointer"
                         onClick={() =>
                           handleProjectDelete?.(project._id)
                         }
                       >
-                        Delete
+                        <img
+                          src="https://img.icons8.com/?size=100&id=14237&format=png&color=ffffff"
+                          alt="Delete"
+                          className="w-3.5 h-3.5 theme-icon-light flex-shrink-0"
+                        />
+                        <span>Delete</span>
                       </div>
                     </div>
                   )}
