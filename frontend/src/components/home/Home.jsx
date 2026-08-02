@@ -147,7 +147,12 @@ const Home = ({ initialShowSettings = false }) => {
       setCurrentChat(urlChatId);
       chatService.getChatMessages(urlChatId)
         .then(msgs => setMessages(msgs))
-        .catch(err => console.error("Error loading chat from URL:", err));
+        .catch(err => {
+          console.error("Error loading chat from URL:", err.response?.data || err.message);
+          setCurrentChat("");
+          setMessages([]);
+          navigate("/", { replace: true });
+        });
     } else if (!urlChatId && !urlProjectId && currentChat) {
       setCurrentChat("");
       setMessages([]);
