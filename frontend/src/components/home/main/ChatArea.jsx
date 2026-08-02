@@ -29,7 +29,13 @@ const ChatArea = ({
   selectedAudio,
   setSelectedAudio,
   onImagePreview,
-  onDeleteMessage
+  onDeleteMessage,
+  editingMessageId,
+  editedPrompt,
+  setEditedPrompt,
+  onStartEdit,
+  onCancelEdit,
+  onEditSend,
 }) => {
   return (
     <>
@@ -43,8 +49,8 @@ const ChatArea = ({
           <div
             ref={containerRef}
             className={`flex flex-col w-full px-2 pt-4 pb-2 ${messages.length === 0
-                ? "items-center justify-start overflow-y-auto"
-                : "overflow-y-auto flex-1 custom-scrollbar"
+              ? "items-center justify-start overflow-y-auto"
+              : "overflow-y-auto flex-1 custom-scrollbar"
               }`}
           >
             {/* Welcome */}
@@ -71,6 +77,12 @@ const ChatArea = ({
                 loadSavedPrompts={LoadSavedPrompts}
                 onImagePreview={onImagePreview}
                 onDeleteMessage={onDeleteMessage}
+                editingMessageId={editingMessageId}
+                editedPrompt={editedPrompt}
+                setEditedPrompt={setEditedPrompt}
+                onStartEdit={onStartEdit}
+                onCancelEdit={onCancelEdit}
+                onEditSend={onEditSend}
                 ref={
                   idx === lastUserIndex
                     ? latestUserRef
@@ -91,7 +103,7 @@ const ChatArea = ({
 
       {/* Sticky Input */}
       {messages.length > 0 && (
-        <div className="sticky bottom-0 w-full h-[72px] bg-transparent z-2 px-3 relative flex justify-center">
+        <div className="sticky bottom-0 w-full h-[72px] bg-background z-2 px-3 relative flex justify-center">
           <div className="absolute bottom-7 max-w-[780px] w-full">
             <PromptInput
               promptText={promptText}

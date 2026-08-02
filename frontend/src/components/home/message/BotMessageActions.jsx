@@ -43,7 +43,7 @@ const BotMessageActions = ({ message }) => {
   };
 
   return (
-    <div className="flex items-center justify-start gap-1 opacity-0 group-hover:opacity-100 transition-all duration-250 mt-1">
+    <div className="flex items-center justify-start gap-1 opacity-100 transition-all duration-250 mt-1">
       {/* Copy */}
       <div
         className="w-7 h-7 flex items-center justify-center rounded-lg bg-card-bg border border-default hover:bg-hover-bg cursor-pointer transition-colors shadow-sm"

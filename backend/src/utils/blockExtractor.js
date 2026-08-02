@@ -14,6 +14,23 @@ function unescapeJsonString(str) {
     .replace(/\\r/g, "\r");
 }
 
+function sanitizeContent(content) {
+  if (typeof content !== "string") return content;
+  const trimmed = content.trim();
+  if (trimmed.startsWith("{") && (trimmed.includes('"type"') || trimmed.includes('"blocks"') || trimmed.includes('"content"'))) {
+    try {
+      const parsed = JSON.parse(trimmed);
+      if (parsed && typeof parsed.content === "string") {
+        return sanitizeContent(parsed.content);
+      }
+      if (parsed && Array.isArray(parsed.blocks) && parsed.blocks[0] && typeof parsed.blocks[0].content === "string") {
+        return sanitizeContent(parsed.blocks[0].content);
+      }
+    } catch (e) {}
+  }
+  return content;
+}
+
 function extractBlocks(rawText) {
   if (!rawText || typeof rawText !== "string") {
     return [{ type: "chat", content: "" }];
@@ -30,11 +47,23 @@ function extractBlocks(rawText) {
           if (block.type === "chat") {
             return {
               type: "chat",
-              content: typeof block.content === "string" ? block.content : JSON.stringify(block.content)
+              content: sanitizeContent(block.content)
             };
           }
           return block;
         });
+      }
+
+      if (parsed && parsed.type === "chat" && typeof parsed.content === "string") {
+        return [{ type: "chat", content: sanitizeContent(parsed.content) }];
+      }
+
+      if (parsed && parsed.type === "quiz") {
+        return [{
+          type: "quiz",
+          title: parsed.title || "Quiz",
+          questions: parsed.questions || []
+        }];
       }
     } catch (e) {
       // Direct JSON parsing failed (e.g. due to unescaped quotes inside code string)
@@ -42,7 +71,7 @@ function extractBlocks(rawText) {
   }
 
   // Case 2: Extract chat blocks & quiz blocks via pattern extraction
-  if (trimmed.startsWith("{") && trimmed.includes('"blocks"')) {
+  if (trimmed.startsWith("{") && (trimmed.includes('"blocks"') || trimmed.includes('"content"'))) {
     const extractedBlocks = [];
 
     // Extract chat contents
@@ -60,7 +89,7 @@ function extractBlocks(rawText) {
     }
 
     if (chatText) {
-      extractedBlocks.push({ type: "chat", content: chatText });
+      extractedBlocks.push({ type: "chat", content: sanitizeContent(chatText) });
     }
 
     // Extract quiz objects if present
@@ -83,7 +112,7 @@ function extractBlocks(rawText) {
   }
 
   // Case 3: Plain text / Markdown
-  return [{ type: "chat", content: trimmed }];
+  return [{ type: "chat", content: sanitizeContent(trimmed) }];
 }
 
 module.exports = { extractBlocks, unescapeJsonString };
