@@ -1,0 +1,160 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --color-background: var(--background);
+  --color-primary: var(--text-primary);
+  --color-secondary: var(--text-secondary);
+  --color-default: var(--border-default);
+  --color-card-bg: var(--card-bg);
+  --color-sidebar-bg: var(--sidebar-bg);
+  --color-hover-bg: var(--hover-bg);
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+}
+
+:root {
+  --background: #f9f9f9;
+  --text-primary: #111111;
+  --text-secondary: #666666;
+  --border-default: #e5e7eb;
+  --card-bg: #ffffff;
+  --sidebar-bg: #f3f4f6;
+  --hover-bg: #e5e7eb;
+  --accent: #155dfc;
+  --accent-hover: #1d4ed8;
+}
+
+.dark {
+  --background: #000000;
+  --text-primary: #ffffff;
+  --text-secondary: #969696;
+  --border-default: #262626;
+  --card-bg: #161616;
+  --sidebar-bg: #070707;
+  --hover-bg: #222222;
+}
+
+/* Custom class for natively dark assets (stays dark on light theme, inverts to white on dark theme) */
+.theme-icon-dark {
+  filter: invert(0) !important;
+}
+.dark .theme-icon-dark {
+  filter: invert(1) !important;
+}
+
+/* Custom class for natively light/white assets (inverts to black on light theme, stays white on dark theme) */
+.theme-icon-light {
+  filter: invert(1) !important;
+}
+.dark .theme-icon-light {
+  filter: invert(0) !important;
+}
+
+/* Ensure smooth theme transitions on background and text colors */
+body {
+  background-color: var(--background);
+  color: var(--text-primary);
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+/* Loading overlay entrance animation */
+@keyframes overlay-fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes overlay-card-in {
+  from { opacity: 0; transform: scale(0.94) translateY(8px); }
+  to   { opacity: 1; transform: scale(1)    translateY(0);   }
+}
+.loading-overlay-backdrop {
+  animation: overlay-fade-in 0.25s ease forwards;
+}
+.loading-overlay-card {
+  animation: overlay-card-in 0.3s cubic-bezier(0.16,1,0.3,1) forwards;
+}
+
+
+
+
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-default) transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background-color: var(--border-default);
+  border-radius: 9999px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background-color: var(--text-secondary);
+}
+
+.markdown p {
+  margin-bottom: 1em;
+}
+
+.markdown ol {
+  padding-left: 1.5em;
+  margin-bottom: 1em;
+  list-style-type: decimal; 
+}
+
+.markdown ul {
+  padding-left: 1.5em;
+  margin-bottom: 1em;
+  list-style-type: disc; 
+}
+
+.markdown li {
+  margin-bottom: 0.5em;
+}
+
+.markdown strong {
+  font-weight: 600;
+}
+
+.markdown em {
+  font-style: italic;
+}
+
+.markdown code {
+  background-color: rgba(255, 255, 255, 0.1);
+  padding: 0.2em 0.4em;
+  border-radius: 4px;
+  font-family: monospace;
+}
+
+.markdown pre {
+  margin: 1em 0;
+}
+
+/* Image viewer animation keyframes */
+@keyframes viewer-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes viewer-scale-up {
+  from { transform: scale(0.95); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+.image-viewer-backdrop {
+  animation: viewer-fade-in 0.2s ease-out forwards;
+}
+
+.image-viewer-content {
+  animation: viewer-scale-up 0.25s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
