@@ -63,7 +63,7 @@ const tempChat = async (req, res) => {
     }
 
     if (!model) {
-      model = "llama-3.3-70b-versatile";
+      model = "openai/gpt-oss-120b";
     }
 
     if (!ReasoningService.allowedModels.includes(model)) {
@@ -139,7 +139,7 @@ const tempFeedback = async (req, res) => {
     let { currentChat, prompt } = req.body;
 
     const rawFeedback = await GroqService.generateFeedback({
-      model: "llama-3.1-8b-instant",
+      model: "openai/gpt-oss-20b",
       message: prompt
     });
 

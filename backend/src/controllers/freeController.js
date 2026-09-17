@@ -93,9 +93,9 @@ const tempChat = async (req, res) => {
       currentChat = `guest-${uuidv4()}`;
     }
 
-    // Default to llama-3.3-70b-versatile if model not provided
+    // Default to openai/gpt-oss-120b if model not provided
     if (!model) {
-      model = "llama-3.3-70b-versatile";
+      model = "openai/gpt-oss-120b";
     }
 
     // Validate that reasoning model is allowed
@@ -180,7 +180,7 @@ const tempFeedback = async (req, res) => {
     let { currentChat, prompt } = req.body;
 
     const apiRes = await axios.post(`${LLM_API_URL}/feedback`, {
-      model: "llama-3.1-8b-instant",
+      model: "openai/gpt-oss-20b",
       message: prompt
     });
 
@@ -193,4 +193,4 @@ const tempFeedback = async (req, res) => {
   }
 };
 
-module.exports = { tempChat, tempFeedback};
+module.exports = { tempChat, tempFeedback };

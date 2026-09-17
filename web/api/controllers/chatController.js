@@ -61,7 +61,7 @@ const chat = async (req, res) => {
     let { currentChat, projectId, prompt, parts, model } = req.body;
 
     if (!model) {
-      model = "llama-3.3-70b-versatile";
+      model = "openai/gpt-oss-120b";
     }
 
     if (!ReasoningService.allowedModels.includes(model)) {
@@ -126,7 +126,7 @@ const chat = async (req, res) => {
       messageId: userMessage._id,
       chatId: currentChat,
       userId: user._id
-    }).catch(() => {});
+    }).catch(() => { });
 
     await ConversationCache.addMessage(currentChat, userMessage);
 
@@ -150,7 +150,7 @@ const chat = async (req, res) => {
             .sort({ createdAt: -1 })
             .limit(10)
             .lean();
-        } catch (e) {}
+        } catch (e) { }
 
         semanticMatches = ContextRanker.rankMatches(rawMatches, currentChat, 5);
 
@@ -212,7 +212,7 @@ const chat = async (req, res) => {
       messageId: botMessage._id,
       chatId: currentChat,
       userId: user._id
-    }).catch(() => {});
+    }).catch(() => { });
 
     await ConversationCache.addMessage(currentChat, botMessage);
 
@@ -231,7 +231,7 @@ const feedback = async (req, res) => {
     let { currentChat, prompt } = req.body;
 
     const rawFeedback = await GroqService.generateFeedback({
-      model: "llama-3.1-8b-instant",
+      model: "openai/gpt-oss-20b",
       message: prompt
     });
 
@@ -263,7 +263,7 @@ const streamChat = async (req, res) => {
     }
 
     let { currentChat, projectId, prompt, parts, model } = req.body;
-    if (!model) model = "llama-3.3-70b-versatile";
+    if (!model) model = "openai/gpt-oss-120b";
     if (!ReasoningService.allowedModels.includes(model)) {
       return res.status(400).json({ error: `Invalid reasoning model selected: ${model}` });
     }
@@ -329,7 +329,7 @@ const streamChat = async (req, res) => {
       messageId: userMessage._id,
       chatId: currentChat,
       userId: user._id
-    }).catch(() => {});
+    }).catch(() => { });
 
     await ConversationCache.addMessage(currentChat, userMessage);
 
@@ -348,7 +348,7 @@ const streamChat = async (req, res) => {
           .sort({ createdAt: -1 })
           .limit(10)
           .lean();
-      } catch (e) {}
+      } catch (e) { }
 
       semanticMatches = ContextRanker.rankMatches(rawMatches, currentChat, 5);
     }
@@ -383,7 +383,7 @@ const streamChat = async (req, res) => {
       if (!res.writableEnded) {
         clientDisconnected = true;
         abortController.abort();
-        StreamingState.setGenerating(currentChat, "idle").catch(() => {});
+        StreamingState.setGenerating(currentChat, "idle").catch(() => { });
       }
     });
 
@@ -429,7 +429,7 @@ const streamChat = async (req, res) => {
         messageId: botMessage._id,
         chatId: currentChat,
         userId: user._id
-      }).catch(() => {});
+      }).catch(() => { });
 
       await ConversationCache.addMessage(currentChat, botMessage);
 
@@ -446,7 +446,7 @@ const streamChat = async (req, res) => {
     }
   } finally {
     if (currentChatId) {
-      await StreamingState.setGenerating(currentChatId, "idle").catch(() => {});
+      await StreamingState.setGenerating(currentChatId, "idle").catch(() => { });
     }
   }
 };

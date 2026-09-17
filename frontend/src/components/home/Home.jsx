@@ -80,7 +80,7 @@ const Home = ({ initialShowSettings = false }) => {
   const inputBarRef = useRef(null);
   const [promptText, setPromptText] = useState("");
   const [loading, setLoading] = useState(false);
-  const [selectedModel, setSelectedModel] = useState("llama-3.3-70b-versatile");
+  const [selectedModel, setSelectedModel] = useState("openai/gpt-oss-120b");
   const [selectedImage, setSelectedImage] = useState(null);
   const [selectedAudio, setSelectedAudio] = useState(null);
 

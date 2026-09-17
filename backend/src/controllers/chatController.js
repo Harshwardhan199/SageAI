@@ -102,7 +102,7 @@ const generateEmbedding = async (text) => {
   const payload = { text: typeof text === "string" ? text : JSON.stringify(text) };
 
   try {
-    const res = await axios.post(`${LLM_API_URL}/embed`, payload );
+    const res = await axios.post(`${LLM_API_URL}/embed`, payload);
     return res.data.embedding;
   } catch (err) {
     console.error("Error generating embedding:", err);
@@ -129,7 +129,7 @@ const chat = async (req, res) => {
 
     // Default model if not provided
     if (!model) {
-      model = "llama-3.3-70b-versatile";
+      model = "openai/gpt-oss-120b";
     }
 
     // Validate model
@@ -224,7 +224,7 @@ const chat = async (req, res) => {
             .sort({ createdAt: -1 })
             .limit(10)
             .lean();
-        } catch (e) {}
+        } catch (e) { }
 
         semanticMatches = ContextRanker.rankMatches(rawMatches, currentChat, 5);
 
@@ -308,7 +308,7 @@ const feedback = async (req, res) => {
     let { currentChat, prompt } = req.body;
 
     const apiRes = await axios.post(`${LLM_API_URL}/feedback`, {
-      model: "llama-3.1-8b-instant",
+      model: "openai/gpt-oss-20b",
       message: prompt
     });
 
@@ -336,7 +336,7 @@ const streamChat = async (req, res) => {
     }
 
     let { currentChat, projectId, prompt, parts, model } = req.body;
-    if (!model) model = "llama-3.3-70b-versatile";
+    if (!model) model = "openai/gpt-oss-120b";
     if (!ReasoningService.allowedModels.includes(model)) {
       return res.status(400).json({ error: `Invalid reasoning model selected: ${model}` });
     }
@@ -394,7 +394,7 @@ const streamChat = async (req, res) => {
       parts: parts
     });
     await userMessage.save();
-    
+
     // Enqueue user message embedding task asynchronously in Redis background queue
     EmbeddingQueue.enqueue(userMessage._id, embeddingText);
 
@@ -415,7 +415,7 @@ const streamChat = async (req, res) => {
           .sort({ createdAt: -1 })
           .limit(10)
           .lean();
-      } catch (e) {}
+      } catch (e) { }
 
       semanticMatches = ContextRanker.rankMatches(rawMatches, currentChat, 5);
     }
@@ -467,7 +467,7 @@ const streamChat = async (req, res) => {
           try {
             const parsed = JSON.parse(trimmedLine.substring(6));
             if (parsed.token) accumulatedText += parsed.token;
-          } catch (e) {}
+          } catch (e) { }
         }
       }
     });
@@ -478,7 +478,7 @@ const streamChat = async (req, res) => {
           try {
             const parsed = JSON.parse(sseBuffer.trim().substring(6));
             if (parsed.token) accumulatedText += parsed.token;
-          } catch (e) {}
+          } catch (e) { }
         }
 
         let blocks = extractBlocks(accumulatedText);
