@@ -6,6 +6,7 @@ import { config } from "../config";
 let accessTokenCache = null;
 let setUserCache = null;
 let setAccessTokenCache = null;
+let setIsAuthenticatedCache = null;
 let clearAuthCache = null;
 
 const AuthContext = createContext();
@@ -20,10 +21,16 @@ export const AuthProvider = ({ children }) => {
   // Expose setters to authStore
   setUserCache = setUser;
   setAccessTokenCache = setAccessToken;
+  setIsAuthenticatedCache = setIsAuthenticated;
 
   const updateAccessToken = (token) => {
     accessTokenCache = token;
     setAccessToken(token);
+  };
+
+  const updateUser = (nextUser) => {
+    setUser(nextUser);
+    setIsAuthenticated(Boolean(nextUser));
   };
 
   const clearAuth = () => {
@@ -47,8 +54,7 @@ export const AuthProvider = ({ children }) => {
 
       if (res.data.authenticated) {
         updateAccessToken(res.data.accessToken);
-        setUser(res.data.user);
-        setIsAuthenticated(true);
+        updateUser(res.data.user);
       } else {
         clearAuth();
       }
@@ -73,7 +79,7 @@ export const AuthProvider = ({ children }) => {
         isAuthenticated,
 
         updateAccessToken,
-        setUser,
+        setUser: updateUser,
         clearAuth,
         initializeAuth,
       }}
@@ -98,6 +104,9 @@ export const authStore = {
   setUser: (user) => {
     if (setUserCache) {
       setUserCache(user);
+    }
+    if (setIsAuthenticatedCache) {
+      setIsAuthenticatedCache(Boolean(user));
     }
   },
 

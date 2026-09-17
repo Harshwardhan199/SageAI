@@ -3,7 +3,7 @@ const axios = require("axios");
 class ReasoningService {
   static allowedModels = [
     "openai/gpt-oss-120b",
-    "llama-3.3-70b-versatile",
+    "openai/gpt-oss-120b",
     "qwen/qwen3-32b"
   ];
 

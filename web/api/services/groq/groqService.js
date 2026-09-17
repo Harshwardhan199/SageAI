@@ -5,11 +5,14 @@ let groqClient = null;
 function getGroqClient() {
   if (!groqClient) {
     const apiKey = process.env.GROQ_API_KEY;
+
     if (!apiKey) {
       console.warn("[GroqService] GROQ_API_KEY is not set.");
     }
+
     groqClient = new Groq({ apiKey: apiKey || "dummy_key" });
   }
+
   return groqClient;
 }
 
@@ -40,6 +43,7 @@ function prepareMessages(inputMessages = []) {
   }));
 
   const systemIdx = messages.findIndex((m) => m.role === "system");
+
   if (systemIdx !== -1) {
     const original = messages[systemIdx].content || "";
     messages[systemIdx].content = original + "\n\n" + UNIFIED_SYSTEM_PROMPT;
@@ -61,7 +65,7 @@ const GroqService = {
   /**
    * Generates a non-streaming chat completion with strict JSON response format.
    */
-  chatCompletion: async ({ model = "llama-3.3-70b-versatile", messages = [] }) => {
+  chatCompletion: async ({ model = "openai/gpt-oss-120b", messages = [] }) => {
     const groq = getGroqClient();
     const preparedMessages = prepareMessages(messages);
 
@@ -75,9 +79,11 @@ const GroqService = {
 
     try {
       const parsed = JSON.parse(rawContent);
+
       if (parsed && typeof parsed === "object" && Array.isArray(parsed.blocks)) {
         return parsed;
       }
+
       return {
         blocks: [{ type: "chat", content: rawContent }]
       };
@@ -91,7 +97,7 @@ const GroqService = {
   /**
    * Returns a streaming chat completion from Groq with abort signal support.
    */
-  streamChatCompletion: async ({ model = "llama-3.3-70b-versatile", messages = [] }, { signal } = {}) => {
+  streamChatCompletion: async ({ model = "openai/gpt-oss-120b", messages = [] }, { signal } = {}) => {
     const groq = getGroqClient();
     const preparedMessages = prepareMessages(messages);
 
@@ -108,8 +114,9 @@ const GroqService = {
   /**
    * Feedback completion for quiz questions.
    */
-  generateFeedback: async ({ model = "llama-3.1-8b-instant", message = "" }) => {
+  generateFeedback: async ({ model = "openai/gpt-oss-20b", message = "" }) => {
     const groq = getGroqClient();
+
     const systemPrompt =
       "You are a helpful assistant. Your task: explain to user why their answer is wrong, or just correct them if it's factual. And do no state that user's answer is incorrect or wrong as user's asking you because its incorrect Never add extra chatty phrases or unrelated suggestions. Respond concisely.";
 

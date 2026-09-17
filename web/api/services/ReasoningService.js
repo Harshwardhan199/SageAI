@@ -3,8 +3,9 @@ const GroqService = require("./groq/groqService");
 class ReasoningService {
   static allowedModels = [
     "openai/gpt-oss-120b",
-    "llama-3.3-70b-versatile",
-    "qwen/qwen3-32b"
+    "openai/gpt-oss-20b",
+    "qwen/qwen3.6-27b",
+    "qwen/qwen3.8-27b"
   ];
 
   /**

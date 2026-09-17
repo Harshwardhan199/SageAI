@@ -23,9 +23,10 @@ const TitleBar = ({
 
   // Model choices map for display labels
   const modelLabels = {
-    "llama-3.3-70b-versatile": "Llama 3.3 70B",
     "openai/gpt-oss-120b": "GPT-OSS 120B",
-    "qwen/qwen3-32b": "Qwen3 32B",
+    "openai/gpt-oss-20b": "GPT-OSS 20B",
+    "qwen/qwen3.6-27b": "Qwen 3.6 27B",
+    "qwen/qwen3.8-27b": "Qwen 3.8 27B",
   };
 
   useEffect(() => {
