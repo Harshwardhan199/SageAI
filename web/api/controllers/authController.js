@@ -50,15 +50,19 @@ const signup = async (req, res) => {
       { expiresIn: process.env.JWT_REFRESH_EXPIRES_IN || "7d" }
     );
 
-    await SessionStore.createSession(sessionId, newUser._id.toString(), {
+    const session = await SessionStore.createSession(sessionId, newUser._id.toString(), {
       userAgent: req.headers["user-agent"] || "unknown",
       ip: req.ip
     });
+    if (!session) {
+      return res.status(503).json({ error: "Authentication session service is unavailable" });
+    }
 
     res.cookie("refreshToken", refreshToken, COOKIE_OPTIONS);
 
     return res.status(201).json({
       message: "Signup successful",
+      user: { username: newUser.username, email: newUser.email },
       data: { username: newUser.username, email: newUser.email },
       accessToken
     });
@@ -119,15 +123,19 @@ const login = async (req, res) => {
       { expiresIn: process.env.JWT_REFRESH_EXPIRES_IN || "7d" }
     );
 
-    await SessionStore.createSession(sessionId, existingUser._id.toString(), {
+    const session = await SessionStore.createSession(sessionId, existingUser._id.toString(), {
       userAgent: req.headers["user-agent"] || "unknown",
       ip: req.ip
     });
+    if (!session) {
+      return res.status(503).json({ error: "Authentication session service is unavailable" });
+    }
 
     res.cookie("refreshToken", refreshToken, COOKIE_OPTIONS);
 
     return res.status(200).json({
       message: "Login successful",
+      user: { username: existingUser.username, email: existingUser.email },
       data: { username: existingUser.username, email: existingUser.email },
       accessToken
     });
@@ -193,15 +201,19 @@ const googleSignIn = async (req, res) => {
       { expiresIn: process.env.JWT_REFRESH_EXPIRES_IN || "7d" }
     );
 
-    await SessionStore.createSession(sessionId, user._id.toString(), {
+    const session = await SessionStore.createSession(sessionId, user._id.toString(), {
       userAgent: req.headers["user-agent"] || "unknown",
       ip: req.ip
     });
+    if (!session) {
+      return res.status(503).json({ error: "Authentication session service is unavailable" });
+    }
 
     res.cookie("refreshToken", refreshToken, COOKIE_OPTIONS);
 
     return res.status(200).json({
       message: "Google login successful",
+      user: { username: user.username, email: user.email },
       data: { username: user.username, email: user.email },
       accessToken
     });

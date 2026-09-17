@@ -24,14 +24,14 @@ export default function LoginSignup() {
       const email = data.email;
       const password = data.password;
 
-      const res = await axios.post(`${config.BACKEND_URL}/api/auth/signup`, {
-        username,
-        email,
-        password,
-      });
+      const res = await axios.post(
+        `${config.BACKEND_URL}/api/auth/signup`,
+        { username, email, password },
+        { withCredentials: true },
+      );
 
       updateAccessToken(res.data.accessToken);
-      setUser(res.data.user);
+      setUser(res.data.user || res.data.data);
 
       navigate("/");
     } catch (error) {
@@ -56,7 +56,7 @@ export default function LoginSignup() {
       );
 
       updateAccessToken(res.data.accessToken);
-      setUser(res.data.user);
+      setUser(res.data.user || res.data.data);
 
       navigate("/");
     } catch (error) {

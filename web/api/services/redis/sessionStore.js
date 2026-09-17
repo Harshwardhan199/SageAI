@@ -13,6 +13,7 @@ class SessionStore {
 
     try {
       const redis = getRedis();
+      if (!redis) return null;
       const now = new Date().toISOString();
       const expiresAt = new Date(Date.now() + this.TTL * 1000).toISOString();
 
@@ -47,6 +48,7 @@ class SessionStore {
 
     try {
       const redis = getRedis();
+      if (!redis) return null;
       const sessionKey = `session:${sessionId}`;
       const data = await redis.get(sessionKey);
       if (!data) return null;
@@ -65,6 +67,7 @@ class SessionStore {
 
     try {
       const redis = getRedis();
+      if (!redis) return null;
       const sessionKey = `session:${sessionId}`;
       const raw = await redis.get(sessionKey);
       if (!raw) return null;
@@ -92,6 +95,7 @@ class SessionStore {
 
     try {
       const redis = getRedis();
+      if (!redis) return;
       const sessionKey = `session:${sessionId}`;
 
       let targetUserId = userId;
@@ -119,6 +123,7 @@ class SessionStore {
 
     try {
       const redis = getRedis();
+      if (!redis) return [];
       const userIndexKey = `user_sessions:${userId}`;
       const sessionIds = (await redis.smembers(userIndexKey)) || [];
 
@@ -147,6 +152,7 @@ class SessionStore {
 
     try {
       const redis = getRedis();
+      if (!redis) return;
       const userIndexKey = `user_sessions:${userId}`;
       const sessionIds = (await redis.smembers(userIndexKey)) || [];
 
